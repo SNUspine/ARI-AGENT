@@ -1,93 +1,912 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ARI Agent - Next Generation AI</title>
-    <style>
-        :root {
-            --primary-color: #2563eb;
-            --dark-bg: #0f172a;
-            --text-light: #f8fafc;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARI Agent — AI Research Intruments for Spine Analysis</title>
+  <meta name="description" content="AI-powered spinal imaging analysis. Cervical alignment, lumbar balance, stenosis classification, and Proximal junctional kyphosis risk prediction." />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,300&display=swap" rel="stylesheet" />
 
-        body {
-            margin: 0;
-            font-family: 'Pretendard', -apple-system, sans-serif;
-            background-color: var(--dark-bg);
-            color: var(--text-light);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
+  <style>
+    /* ─── Reset & Base ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
 
-        .container {
-            text-align: center;
-            z-index: 1;
-        }
+    :root {
+      --black:   #000000;
+      --ink:     #080808;
+      --surface: #141414;
+      --card:    #1c1c1e;
+      --border:  rgba(255,255,255,.08);
+      --white:   #f5f5f7;
+      --muted:   #6e6e73;
+      --ari-c:   #2ec4e8;
+      --ari-l:   #4da3ff;
+      --ari-s:   #ff6b6b;
+      --ari-p:   #bf8fff;
+      --blue:    #2997ff;
+    }
 
-        h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, #60a5fa, #2563eb);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
 
-        p {
-            font-size: 1.2rem;
-            color: #94a3b8;
-            margin-bottom: 2rem;
-        }
+    img { display: block; max-width: 100%; }
+    a { text-decoration: none; color: inherit; }
 
-        .status-badge {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            background: rgba(37, 99, 235, 0.1);
-            border: 1px solid var(--primary-color);
-            color: #60a5fa;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-        }
+    /* ─── Nav ──────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      padding: 0 22px;
+      background: rgba(0,0,0,.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
 
-        .btn {
-            padding: 1rem 2rem;
-            background-color: var(--primary-color);
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: transform 0.2s;
-        }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
 
-        .btn:hover {
-            transform: scale(1.05);
-        }
+    .nav-logo img {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      object-fit: cover;
+    }
 
-        /* 배경 애니메이션 효과 */
-        .bg-glow {
-            position: absolute;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(37,99,235,0.15) 0%, rgba(15,23,42,0) 70%);
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 0;
-        }
-    </style>
+    .nav-logo-text {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -.3px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      margin-left: 36px;
+    }
+
+    .nav-links a {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: -.1px;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--white); }
+
+    .nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-nav {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 16px;
+      border-radius: 980px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.06);
+      color: var(--white);
+    }
+    .btn-nav:hover { background: rgba(255,255,255,.12); }
+
+    /* ─── Hero ─────────────────────────────────────────────── */
+    .hero {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Radial glow behind hero text */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(46,196,232,.12) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    /* Subtle grid */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
+    }
+
+    .hero-eyebrow {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--ari-c);
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .hero-title {
+      font-size: clamp(52px, 8vw, 88px);
+      font-weight: 700;
+      letter-spacing: -3px;
+      line-height: 1.02;
+      margin-bottom: 22px;
+      position: relative;
+    }
+
+    .hero-title em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--ari-c) 0%, var(--blue) 50%, var(--ari-p) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(17px, 2.2vw, 21px);
+      font-weight: 300;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.55;
+      margin-bottom: 44px;
+      position: relative;
+      letter-spacing: -.2px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 28px;
+      border-radius: 980px;
+      font-size: 16px;
+      font-weight: 500;
+      background: var(--blue);
+      color: #fff;
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+      font-family: inherit;
+      letter-spacing: -.2px;
+    }
+    .btn-primary:hover { background: #1a7ddf; transform: scale(1.02); }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 28px;
+      border-radius: 980px;
+      font-size: 16px;
+      font-weight: 500;
+      background: transparent;
+      color: var(--blue);
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+      font-family: inherit;
+      letter-spacing: -.2px;
+    }
+    .btn-ghost:hover { color: #5ab0ff; }
+
+    .hero-scroll {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255,255,255,.25);
+      font-size: 11px;
+      letter-spacing: .1em;
+    }
+
+    .hero-scroll-line {
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, rgba(255,255,255,.3), transparent);
+      animation: scrollpulse 2s ease-in-out infinite;
+    }
+
+    @keyframes scrollpulse {
+      0%, 100% { opacity: .3; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(1.2); }
+    }
+
+    /* ─── Section Headers ───────────────────────────────────── */
+    .section-header {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 72px;
+      padding: 0 24px;
+    }
+
+    .section-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1.06;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* ─── Featured Module (ARI-C) ───────────────────────────── */
+    .featured {
+      padding: 100px 0;
+      background: linear-gradient(180deg, #000 0%, #0a0a12 50%, #000 100%);
+    }
+
+    .featured-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .featured-image-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Glow behind active image */
+    .featured-image-wrap::before {
+      content: '';
+      position: absolute;
+      width: 340px;
+      height: 340px;
+      background: radial-gradient(ellipse, rgba(46,196,232,.18) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .featured-img {
+      width: 280px;
+      height: 280px;
+      object-fit: contain;
+      position: relative;
+      z-index: 1;
+      filter: drop-shadow(0 32px 64px rgba(46,196,232,.2));
+      transition: transform .4s cubic-bezier(.25,.46,.45,.94);
+    }
+    .featured-img:hover { transform: scale(1.04) translateY(-6px); }
+
+    .featured-body {}
+
+    .featured-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 13px;
+      border-radius: 980px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(63,185,80,.12);
+      color: #3fb950;
+      border: 1px solid rgba(63,185,80,.25);
+      margin-bottom: 20px;
+      letter-spacing: .04em;
+    }
+
+    .featured-tag .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #3fb950;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .6; transform: scale(1.3); }
+    }
+
+    .featured-label {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--ari-c);
+      margin-bottom: 12px;
+    }
+
+    .featured-title {
+      font-size: clamp(34px, 4vw, 48px);
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1.08;
+      margin-bottom: 18px;
+    }
+
+    .featured-desc {
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-weight: 300;
+      margin-bottom: 32px;
+    }
+
+    .featured-stats {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 36px;
+    }
+
+    .stat-item {}
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: var(--white);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .featured-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--ari-c);
+      transition: gap .2s;
+    }
+    .featured-cta:hover { gap: 14px; }
+    .featured-cta:hover .arrow { transform: translateX(4px); }
+    .arrow { transition: transform .2s; }
+
+    /* ─── Modules Grid ──────────────────────────────────────── */
+    .modules {
+      padding: 100px 0;
+    }
+
+    .modules-grid {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 40px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .module-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      transition: transform .3s cubic-bezier(.25,.46,.45,.94), border-color .3s;
+      cursor: default;
+    }
+
+    .module-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .module-card-image {
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .module-card-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, var(--card) 100%);
+    }
+
+    .module-card img {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+      position: relative;
+      z-index: 1;
+      transition: transform .4s cubic-bezier(.25,.46,.45,.94);
+      filter: saturate(0.85);
+    }
+
+    .module-card:hover img { transform: scale(1.06); }
+
+    .module-card-body {
+      padding: 4px 26px 30px;
+    }
+
+    .module-card-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      padding: 3px 10px;
+      border-radius: 980px;
+      margin-bottom: 12px;
+      background: rgba(110,110,115,.12);
+      color: var(--muted);
+      border: 1px solid rgba(110,110,115,.2);
+    }
+
+    .module-card-label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .module-card-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -.5px;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .module-card-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-weight: 300;
+    }
+
+    /* ─── Divider ───────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border) 30%, var(--border) 70%, transparent);
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    /* ─── Promise Section ───────────────────────────────────── */
+    .promise {
+      padding: 120px 24px;
+      text-align: center;
+    }
+
+    .promise-title {
+      font-size: clamp(42px, 6vw, 68px);
+      font-weight: 700;
+      letter-spacing: -3px;
+      line-height: 1.05;
+      max-width: 780px;
+      margin: 0 auto 20px;
+    }
+
+    .promise-title span {
+      color: var(--muted);
+    }
+
+    .promise-desc {
+      font-size: 19px;
+      color: var(--muted);
+      font-weight: 300;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ─── Pillars ───────────────────────────────────────────── */
+    .pillars {
+      padding: 0 40px 120px;
+    }
+
+    .pillars-grid {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+
+    .pillar {
+      background: var(--ink);
+      padding: 44px 36px;
+    }
+
+    .pillar-icon {
+      font-size: 28px;
+      margin-bottom: 18px;
+    }
+
+    .pillar-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -.4px;
+      margin-bottom: 10px;
+    }
+
+    .pillar-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* ─── Footer ────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 36px 40px;
+    }
+
+    .footer-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    .footer-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 40px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 8px;
+    }
+
+    .footer-brand img {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+
+    .footer-brand-name {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .footer-tagline {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 260px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 60px;
+      flex-wrap: wrap;
+    }
+
+    .footer-col-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .footer-col a {
+      display: block;
+      font-size: 13px;
+      color: rgba(255,255,255,.55);
+      margin-bottom: 9px;
+      transition: color .15s;
+    }
+    .footer-col a:hover { color: var(--white); }
+
+    .footer-bottom {
+      padding-top: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-copy {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .footer-disclaimer {
+      font-size: 11.5px;
+      color: rgba(110,110,115,.7);
+      max-width: 540px;
+      text-align: right;
+      line-height: 1.5;
+    }
+
+    /* ─── Responsive ────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .featured-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        text-align: center;
+        padding: 0 24px;
+      }
+      .featured-image-wrap { order: -1; }
+      .featured-stats { justify-content: center; }
+      .modules-grid { grid-template-columns: 1fr; padding: 0 24px; }
+      .pillars-grid { grid-template-columns: 1fr; }
+      .footer-top { flex-direction: column; }
+      .footer-links { gap: 32px; }
+      .footer-bottom { flex-direction: column; align-items: flex-start; }
+      .footer-disclaimer { text-align: left; }
+      .nav-links { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .hero-title { letter-spacing: -2px; }
+      .section-title { letter-spacing: -1px; }
+      .promise-title { letter-spacing: -2px; }
+      .featured-title { letter-spacing: -1.5px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="bg-glow"></div>
-    <div class="container">
-        <div class="status-badge">System Online: ariagent.co.kr</div>
-        <h1>ARI Agent</h1>
-        <p>새로운 인공지능 에이전트 서비스가 곧 시작됩니다.</p>
-        <a href="mailto:imspinesurgeon@gmail.com" class="btn">문의하기</a>
+
+<!-- ══ Nav ══════════════════════════════════════════════════ -->
+<nav>
+  <a href="/" class="nav-logo">
+    <img src="assets/ari_logo.png" alt="ARI" />
+    <span class="nav-logo-text">ARI Agent</span>
+  </a>
+  <div class="nav-links">
+    <a href="#modules">모듈</a>
+    <a href="#about">소개</a>
+    <a href="mailto:imspinesurgeon@gmail.com">문의</a>
+  </div>
+  <div class="nav-right">
+    <button class="btn-nav" onclick="alert('로그인 기능은 준비 중입니다.')">Sign In</button>
+  </div>
+</nav>
+
+<!-- ══ Hero ═════════════════════════════════════════════════ -->
+<section class="hero">
+  <p class="hero-eyebrow">AI RESEARCH INSTRUMENTS</p>
+  <h1 class="hero-title">AI for<br /><em>Spine Analysis.</em></h1>
+  <p class="hero-sub">인공지능으로 구현한 척추 영상 분석 플랫폼. 임상 진료와 방대한 영상분석 연구를 위한 분석을 위한 정밀 AI 도구.</p>
+  <div class="hero-ctas">
+    <a href="#modules" class="btn-primary">모듈 탐색 →</a>
+    <a href="mailto:imspinesurgeon@gmail.com" class="btn-ghost">프로그램 구매문의</a>
+  </div>
+  <div class="hero-scroll">
+    <div class="hero-scroll-line"></div>
+    SCROLL
+  </div>
+</section>
+
+<!-- ══ Featured (ARI-C) ═════════════════════════════════════ -->
+<section class="featured" id="modules">
+  <div class="featured-inner">
+
+    <div class="featured-image-wrap">
+      <img
+        class="featured-img"
+        src="assets/icon_c_spine.png"
+        alt="ARI-C Cervical Spine"
+      />
     </div>
+
+    <div class="featured-body">
+      <div class="featured-tag">
+        <span class="dot"></span>
+        지금 이용 가능
+      </div>
+      <p class="featured-label">ARI-C</p>
+      <h2 class="featured-title">C-spine Sagittal<br />Analysis</h2>
+      <p class="featured-desc">
+        측면 X-ray 한 장으로 C2-C7 Cobb angle, SVA, C7 slope를 자동 측정합니다.
+        DICOM · JPG · PNG · BMP 등 다양한 이미지 포맷을 지원하며 Excel 일괄 다운로드가 가능합니다.
+      </p>
+      <div class="featured-stats">
+        <div class="stat-item">
+          <div class="stat-value">C2–C7</div>
+          <div class="stat-label">전체 경추 분석</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value"> DICOM+a</div>
+          <div class="stat-label">여러 지원 파일 포맷</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">Batch</div>
+          <div class="stat-label">대용량 처리</div>
+        </div>
+      </div>
+      <a href="https://ari-c.streamlit.app" target="_blank" rel="noopener" class="featured-cta">
+        앱 시작하기 <span class="arrow">→</span>
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ Modules Grid (Coming Soon) ═══════════════════════════ -->
+<section class="modules" id="about">
+  <div class="section-header">
+    <p class="section-eyebrow">Research Pipeline</p>
+    <h2 class="section-title">준비 중인 모듈</h2>
+    <p class="section-desc">임상 데이터 기반 훈련 모델이 순차적으로 공개됩니다.</p>
+  </div>
+
+  <div class="modules-grid">
+
+    <!-- ARI-L -->
+    <div class="module-card">
+      <div class="module-card-image" style="background: radial-gradient(ellipse at 50% 60%, rgba(77,163,255,.07) 0%, transparent 70%);">
+        <img src="assets/icon_l_spine.png" alt="ARI-L Lumbar Spine" />
+      </div>
+      <div class="module-card-body">
+        <span class="module-card-tag">Coming Soon</span>
+        <p class="module-card-label" style="color: var(--ari-l)">ARI-L</p>
+        <h3 class="module-card-title">L-Spine Sagittal Analysis</h3>
+        <p class="module-card-desc">요추 시상 균형 분석. Lumbar lordosis, pelvic incidence, sagittal vertical axis 자동 측정.</p>
+      </div>
+    </div>
+
+    <!-- ARI-S -->
+    <div class="module-card">
+      <div class="module-card-image" style="background: radial-gradient(ellipse at 50% 60%, rgba(255,107,107,.07) 0%, transparent 70%);">
+        <img src="assets/icon_stenosis.png" alt="ARI-S Stenosis" />
+      </div>
+      <div class="module-card-body">
+        <span class="module-card-tag">Coming Soon</span>
+        <p class="module-card-label" style="color: var(--ari-s)">ARI-S</p>
+        <h3 class="module-card-title">Lumbar Stenosis Probability</h3>
+        <p class="module-card-desc">3-view X-ray 기반 요추 협착증 확률 예측. Multi-Pose VGG19-BN + Grad-CAM 시각화.</p>
+      </div>
+    </div>
+
+    <!-- ARI-P -->
+    <div class="module-card">
+      <div class="module-card-image" style="background: radial-gradient(ellipse at 50% 60%, rgba(191,143,255,.07) 0%, transparent 70%);">
+        <img src="assets/icon_pjk.png" alt="ARI-P PJK" />
+      </div>
+      <div class="module-card-body">
+        <span class="module-card-tag">Coming Soon</span>
+        <p class="module-card-label" style="color: var(--ari-p)">ARI-P</p>
+        <h3 class="module-card-title">Proximal Junctional Kyphosis Risk</h3>
+        <p class="module-card-desc">척추 교정 수술 후 근위부 인접 후만증 발생 위험도 예측 모델.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══ Promise ═══════════════════════════════════════════════ -->
+<section class="promise">
+  <h2 class="promise-title">정밀하게.<br /><span>지능적으로.</span><br />임상의를 위해.</h2>
+  <p class="promise-desc" style="margin-top: 20px">모든 모듈은 실제 임상 데이터로 훈련되며, 의료진의 판단을 보조하는 연구 도구로 설계되었습니다.</p>
+</section>
+
+<!-- ══ Pillars ═══════════════════════════════════════════════ -->
+<section class="pillars">
+  <div class="pillars-grid">
+    <div class="pillar">
+      <div class="pillar-icon">🧠</div>
+      <p class="pillar-title">딥러닝 기반 추론</p>
+      <p class="pillar-desc">VGG19-BN, ResNet50, ONNX 등 검증된 아키텍처. 임상 등급 데이터로 학습된 모델을 제공합니다.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-icon">🔬</div>
+      <p class="pillar-title">설명 가능한 AI</p>
+      <p class="pillar-desc">Grad-CAM 히트맵과 정량적 측정값으로 AI의 판단 근거를 시각화합니다.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-icon">⚡</div>
+      <p class="pillar-title">즉각적인 결과</p>
+      <p class="pillar-desc">업로드 즉시 분석 완료. DICOM · JPG · PNG · BMP 등 다양한 포맷을 지원합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ Footer ════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand">
+          <img src="assets/ari_logo.png" alt="ARI" />
+          <span class="footer-brand-name">ARI Agent</span>
+        </div>
+        <p class="footer-tagline">AI-powered spinal imaging analysis for clinical research. ariagent.co.kr</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <p class="footer-col-title">모듈</p>
+          <a href="https://ari-c.streamlit.app" target="_blank" rel="noopener">ARI-C (Active)</a>
+          <a href="#modules">ARI-L</a>
+          <a href="#modules">ARI-S</a>
+          <a href="#modules">ARI-P</a>
+        </div>
+        <div class="footer-col">
+          <p class="footer-col-title">연구팀</p>
+          <a href="mailto:imspinesurgeon@gmail.com">문의하기</a>
+          <a href="https://github.com/SNUspine" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2026 ARI Agent. All rights reserved.</p>
+      <p class="footer-disclaimer">⚠ 본 플랫폼은 연구 보조 목적으로만 사용됩니다. 임상적 진단 및 치료 결정은 반드시 자격을 갖춘 의료 전문가가 수행해야 합니다.</p>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>
