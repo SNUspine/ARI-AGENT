@@ -461,40 +461,55 @@ def to_grayscale_uint8(img):
     return img_norm.astype(np.uint8)
 
 
-def auto_crop_screen_photo(gray_img, dark_thresh=20, min_keep_ratio=0.4, min_crop_gain=0.05):
+def auto_crop_screen_photo(gray_img, min_keep_ratio=0.4, min_crop_gain=0.05):
     """
-    Remove dark borders (desk, monitor bezel, PACS chrome) from phone photos of PACS screens.
-    Uses row/column mean brightness profiles to detect where screen content begins/ends.
-    Returns (cropped_gray, (x1, y1, x2, y2)) or (original_gray, None) if no crop needed.
+    Remove dark borders (desk, monitor bezel) from phone photos of PACS screens.
+    Samples outer edge brightness to detect desk/bezel and sets adaptive threshold.
+    Returns (cropped_gray, (x1, y1, x2, y2)) or (original_gray, None).
     """
     h, w = gray_img.shape[:2]
 
+    # Sample outermost ~3% strip on each edge to measure border brightness
+    bh = max(5, h // 30)
+    bw = max(5, w // 30)
+    top_m    = float(np.mean(gray_img[:bh, :]))
+    bottom_m = float(np.mean(gray_img[-bh:, :]))
+    left_m   = float(np.mean(gray_img[:, :bw]))
+    right_m  = float(np.mean(gray_img[:, -bw:]))
+
+    darkest_edge = min(top_m, bottom_m, left_m, right_m)
+
+    # Skip if no edge is very dark — not a phone photo / desk border scenario
+    if darkest_edge > 20:
+        return gray_img, None
+
+    # Adaptive threshold: just above the measured border darkness
+    dark_thresh = max(darkest_edge + 12, 15)
+    dark_thresh = min(dark_thresh, 30)
+
+    # Row/column mean profiles — scan inward from each edge
     row_means = np.mean(gray_img, axis=1).astype(np.float32)
     col_means = np.mean(gray_img, axis=0).astype(np.float32)
 
-    # Smooth profiles to reduce noise at content edges
-    k = max(5, min(h, w) // 200)
-    if k % 2 == 0:
-        k += 1
-    kernel = np.ones(k, dtype=np.float32) / k
-    row_s = np.convolve(row_means, kernel, mode='same')
-    col_s = np.convolve(col_means, kernel, mode='same')
+    y1 = 0
+    while y1 < h - 1 and row_means[y1] <= dark_thresh:
+        y1 += 1
+    y2 = h - 1
+    while y2 > y1 and row_means[y2] <= dark_thresh:
+        y2 -= 1
+    y2 += 1
 
-    bright_rows = np.where(row_s > dark_thresh)[0]
-    bright_cols = np.where(col_s > dark_thresh)[0]
+    x1 = 0
+    while x1 < w - 1 and col_means[x1] <= dark_thresh:
+        x1 += 1
+    x2 = w - 1
+    while x2 > x1 and col_means[x2] <= dark_thresh:
+        x2 -= 1
+    x2 += 1
 
-    if len(bright_rows) < 2 or len(bright_cols) < 2:
-        return gray_img, None
-
-    y1, y2 = int(bright_rows[0]), int(bright_rows[-1]) + 1
-    x1, x2 = int(bright_cols[0]), int(bright_cols[-1]) + 1
     crop_h, crop_w = y2 - y1, x2 - x1
-
-    # Skip if result is too small relative to original
     if crop_h < h * min_keep_ratio or crop_w < w * min_keep_ratio:
         return gray_img, None
-
-    # Skip if we're not actually removing a meaningful border
     removed = 1.0 - (crop_h * crop_w) / (h * w)
     if removed < min_crop_gain:
         return gray_img, None
