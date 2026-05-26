@@ -50,16 +50,19 @@ header { visibility: hidden; }
 .ari-back {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    font-size: 13px;
-    color: #2ec4e8;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
     text-decoration: none;
-    opacity: .7;
-    letter-spacing: .01em;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
     margin-bottom: 20px;
-    transition: opacity .15s;
+    transition: background .15s;
+    line-height: 1;
 }
-.ari-back:hover { opacity: 1; }
+.ari-back:hover { background: rgba(255,255,255,.12); }
 .ari-eyebrow {
     font-size: 11px;
     font-weight: 600;
@@ -214,7 +217,7 @@ hr { border-color: rgba(255,255,255,.07) !important; margin: 32px 0 !important; 
 # ─── Header ───────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="ari-header">
-  <a href="https://ariagent.co.kr" class="ari-back">← ariagent.co.kr</a>
+  <a href="https://ariagent.co.kr" class="ari-back" title="ariagent.co.kr">🏠</a>
   <p class="ari-eyebrow">ARI-C &nbsp;·&nbsp; C-Spine Module</p>
   <h1 class="ari-title">C-spine Lateral Radiograph Analyzer</h1>
   <p class="ari-sub">C2–C7 Cervical Spine Cobb Angle, C2 Sagittal Vertical Axis, C7 slope Measurement</p>
