@@ -461,6 +461,47 @@ def to_grayscale_uint8(img):
     return img_norm.astype(np.uint8)
 
 
+def auto_crop_screen_photo(gray_img, dark_thresh=20, min_keep_ratio=0.4, min_crop_gain=0.05):
+    """
+    Remove dark borders (desk, monitor bezel, PACS chrome) from phone photos of PACS screens.
+    Uses row/column mean brightness profiles to detect where screen content begins/ends.
+    Returns (cropped_gray, (x1, y1, x2, y2)) or (original_gray, None) if no crop needed.
+    """
+    h, w = gray_img.shape[:2]
+
+    row_means = np.mean(gray_img, axis=1).astype(np.float32)
+    col_means = np.mean(gray_img, axis=0).astype(np.float32)
+
+    # Smooth profiles to reduce noise at content edges
+    k = max(5, min(h, w) // 200)
+    if k % 2 == 0:
+        k += 1
+    kernel = np.ones(k, dtype=np.float32) / k
+    row_s = np.convolve(row_means, kernel, mode='same')
+    col_s = np.convolve(col_means, kernel, mode='same')
+
+    bright_rows = np.where(row_s > dark_thresh)[0]
+    bright_cols = np.where(col_s > dark_thresh)[0]
+
+    if len(bright_rows) < 2 or len(bright_cols) < 2:
+        return gray_img, None
+
+    y1, y2 = int(bright_rows[0]), int(bright_rows[-1]) + 1
+    x1, x2 = int(bright_cols[0]), int(bright_cols[-1]) + 1
+    crop_h, crop_w = y2 - y1, x2 - x1
+
+    # Skip if result is too small relative to original
+    if crop_h < h * min_keep_ratio or crop_w < w * min_keep_ratio:
+        return gray_img, None
+
+    # Skip if we're not actually removing a meaningful border
+    removed = 1.0 - (crop_h * crop_w) / (h * w)
+    if removed < min_crop_gain:
+        return gray_img, None
+
+    return gray_img[y1:y2, x1:x2], (x1, y1, x2, y2)
+
+
 def should_invert(gray_img):
     """
     이미지가 역상인지 판단한다.
@@ -1161,14 +1202,26 @@ class C2C7Inference:
     def run(self, filepath):
         """Run inference on a single image file."""
         raw, pixel_spacing, dicom_info = load_image(filepath)
-        gray_base = correct_inversion(to_grayscale_uint8(raw))
+        gray_base = to_grayscale_uint8(raw)
+        gray_base, _crop = auto_crop_screen_photo(gray_base)
+        gray_base = correct_inversion(gray_base)
 
         if raw.ndim == 2:
             original_color = cv2.cvtColor(to_grayscale_uint8(raw), cv2.COLOR_GRAY2BGR)
+            if _crop is not None:
+                cx1, cy1, cx2, cy2 = _crop
+                original_color = original_color[cy1:cy2, cx1:cx2]
         elif raw.ndim == 3 and raw.shape[2] == 3 and raw.dtype == np.uint8:
-            original_color = raw.copy()
+            if _crop is not None:
+                cx1, cy1, cx2, cy2 = _crop
+                original_color = raw[cy1:cy2, cx1:cx2].copy()
+            else:
+                original_color = raw.copy()
         else:
             original_color = cv2.cvtColor(to_grayscale_uint8(raw), cv2.COLOR_GRAY2BGR)
+            if _crop is not None:
+                cx1, cy1, cx2, cy2 = _crop
+                original_color = original_color[cy1:cy2, cx1:cx2]
 
         return self._run_from_gray(gray_base, original_color, pixel_spacing, dicom_info)
 
@@ -1193,6 +1246,9 @@ class C2C7Inference:
         raw, pixel_spacing, dicom_info = load_image(filepath)
         gray_orig = to_grayscale_uint8(raw)
 
+        # Remove dark borders from phone photos of PACS screens
+        gray_orig, _crop = auto_crop_screen_photo(gray_orig)
+
         # 역상 여부를 전체 이미지 기준으로 한 번만 판단
         needs_invert = should_invert(gray_orig)
 
@@ -1200,7 +1256,11 @@ class C2C7Inference:
         if raw.ndim == 2:
             original_color = cv2.cvtColor(gray_orig, cv2.COLOR_GRAY2BGR)
         elif raw.ndim == 3 and raw.shape[2] == 3 and raw.dtype == np.uint8:
-            original_color = raw.copy()
+            if _crop is not None:
+                cx1, cy1, cx2, cy2 = _crop
+                original_color = raw[cy1:cy2, cx1:cx2].copy()
+            else:
+                original_color = raw.copy()
         else:
             original_color = cv2.cvtColor(gray_orig, cv2.COLOR_GRAY2BGR)
 
