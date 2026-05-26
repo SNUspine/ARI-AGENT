@@ -24,7 +24,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# ─── Apple-style dark theme ───────────────────────────────────────────────────
+# ─── Apple Product Page dark theme ──────────────────────────────────────────
 st.markdown("""
 <style>
 body, .stApp {
@@ -32,7 +32,7 @@ body, .stApp {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
 }
 .main .block-container {
-    padding: 0 2.5rem 5rem;
+    padding: 68px 2.5rem 5rem;
     max-width: 980px;
 }
 #MainMenu { visibility: hidden; }
@@ -41,70 +41,102 @@ header { visibility: hidden; }
 [data-testid="stDecoration"] { display: none !important; }
 [data-testid="stToolbar"] { display: none !important; }
 
-/* ─── Custom header ── */
-.ari-header {
-    padding: 40px 0 28px;
-    border-bottom: 1px solid rgba(255,255,255,.08);
-    margin-bottom: 32px;
+/* ─── Fixed navbar ── */
+.ari-nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    background: rgba(29,29,31,.78);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,.06);
 }
-.ari-back {
+.ari-nav-back {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
+    gap: 5px;
+    font-size: 14px;
+    font-weight: 400;
+    color: #2ec4e8;
     text-decoration: none;
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: 10px;
-    margin-bottom: 20px;
-    transition: background .15s;
-    line-height: 1;
+    letter-spacing: -.01em;
+    transition: opacity .15s;
 }
-.ari-back:hover { background: rgba(255,255,255,.12); }
+.ari-nav-back:hover { opacity: .65; }
+.ari-nav-back svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.ari-nav-brand {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,.4);
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+
+/* ─── Page header ── */
+.ari-header {
+    padding: 52px 0 36px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    margin-bottom: 40px;
+}
 .ari-eyebrow {
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: .12em;
+    letter-spacing: .14em;
     text-transform: uppercase;
     color: #2ec4e8;
-    margin: 0 0 10px;
+    margin: 0 0 16px;
 }
 .ari-title {
-    font-size: 48px;
+    font-size: 52px;
     font-weight: 700;
-    letter-spacing: -.028em;
+    letter-spacing: -.03em;
     color: #f5f5f7;
-    margin: 0 0 8px;
+    margin: 0 0 14px;
     line-height: 1.0;
 }
 .ari-sub {
-    font-size: 18px;
+    font-size: 19px;
     color: #86868b;
     font-weight: 400;
     letter-spacing: -.01em;
-    margin: 0;
+    margin: 0 0 24px;
+    line-height: 1.5;
 }
+.ari-specs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ari-chip {
+    font-size: 12px;
+    font-weight: 500;
+    color: #98989d;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 99px;
+    padding: 4px 13px;
+    letter-spacing: .01em;
+    white-space: nowrap;
+}
+
+/* ─── Section labels ── */
 .ari-section {
     font-size: 22px;
     font-weight: 600;
     color: #f5f5f7;
     letter-spacing: -.015em;
-    margin: 40px 0 16px;
-    padding-bottom: 10px;
+    margin: 44px 0 16px;
+    padding-bottom: 12px;
     border-bottom: 1px solid rgba(255,255,255,.06);
-}
-
-/* ─── Info box ── */
-[data-testid="stInfo"] {
-    background: rgba(46,196,232,.06) !important;
-    border: 1px solid rgba(46,196,232,.18) !important;
-    border-radius: 12px !important;
-}
-[data-testid="stInfo"] p,
-[data-testid="stInfo"] span {
-    color: rgba(46,196,232,.9) !important;
 }
 
 /* ─── File uploader ── */
@@ -214,17 +246,31 @@ hr { border-color: rgba(255,255,255,.07) !important; margin: 32px 0 !important; 
 </style>
 """, unsafe_allow_html=True)
 
-# ─── Header ───────────────────────────────────────────────────────────────────
-st.markdown("""
+# ─── Navbar + Header ─────────────────────────────────────────────────────────
+st.markdown(f"""
+<nav class="ari-nav">
+  <a href="https://ariagent.co.kr" class="ari-nav-back">
+    <svg width="8" height="13" viewBox="0 0 8 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 1L1 6.5L7 12" stroke="#2ec4e8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    ARI Agent
+  </a>
+  <span class="ari-nav-brand">ARI-C</span>
+</nav>
+
 <div class="ari-header">
-  <a href="https://ariagent.co.kr" class="ari-back" title="ariagent.co.kr">🏠</a>
   <p class="ari-eyebrow">ARI-C &nbsp;·&nbsp; C-Spine Module</p>
-  <h1 class="ari-title">C-spine Lateral Radiograph Analyzer</h1>
-  <p class="ari-sub">C2–C7 Cervical Spine Cobb Angle, C2 Sagittal Vertical Axis, C7 slope Measurement</p>
+  <h1 class="ari-title">C-spine Lateral<br>Radiograph Analyzer</h1>
+  <p class="ari-sub">C2–C7 Cobb Angle &nbsp;·&nbsp; C2 Sagittal Vertical Axis &nbsp;·&nbsp; C7 Slope</p>
+  <div class="ari-specs">
+    <span class="ari-chip">Web &nbsp;·&nbsp; {MAX_FILE_SIZE_MB} MB limit</span>
+    <span class="ari-chip">DICOM</span>
+    <span class="ari-chip">JPG</span>
+    <span class="ari-chip">PNG</span>
+    <span class="ari-chip">BMP</span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
-
-st.info(f"Web version · **{MAX_FILE_SIZE_MB}MB** per file limit &nbsp;·&nbsp; DICOM / JPG / PNG / BMP")
 
 
 @st.cache_resource
