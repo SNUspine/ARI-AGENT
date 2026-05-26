@@ -238,6 +238,62 @@ h2, h3 { color: #f5f5f7 !important; font-weight: 600 !important; letter-spacing:
 hr { border-color: rgba(255,255,255,.07) !important; margin: 32px 0 !important; }
 .stCaption { color: #6e6e73 !important; }
 
+/* ─── Status summary ── */
+.ari-status-summary {
+    margin-bottom: 20px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.07);
+}
+.ari-status-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+}
+.ari-status-header.all-ok {
+    background: rgba(48,209,88,.08);
+    border-bottom: 1px solid rgba(48,209,88,.15);
+    color: #30d158;
+}
+.ari-status-header.has-err {
+    background: rgba(255,159,10,.08);
+    border-bottom: 1px solid rgba(255,159,10,.15);
+    color: #ff9f0a;
+}
+.ari-status-rows { padding: 6px 0; }
+.ari-status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.ari-status-row:last-child { border-bottom: none; }
+.ari-status-fname {
+    color: #98989d;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 16px;
+}
+.ari-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 99px;
+    letter-spacing: .03em;
+}
+.ari-badge.ok  { background: rgba(48,209,88,.12);  color: #30d158; border: 1px solid rgba(48,209,88,.2); }
+.ari-badge.err { background: rgba(255,69,58,.12);  color: #ff453a; border: 1px solid rgba(255,69,58,.2); }
+
 /* ─── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: #1d1d1f; }
@@ -422,6 +478,45 @@ if uploaded_files:
     if "all_results" in st.session_state:
         all_results = st.session_state["all_results"]
         result_images = st.session_state["result_images"]
+
+        # ── Status summary ─────────────────────────────────────────────────────
+        n_total = len(all_results)
+        n_ok  = sum(1 for r in all_results if r["Status"] == "Completed")
+        n_err = n_total - n_ok
+
+        header_cls = "all-ok" if n_err == 0 else "has-err"
+        header_icon = "✓" if n_err == 0 else "⚠"
+        if n_err == 0:
+            header_text = f"{n_ok} / {n_total} &nbsp; Completed"
+        else:
+            header_text = (
+                f"{n_ok} / {n_total} &nbsp; Completed"
+                + (f" &nbsp;·&nbsp; {n_err} Error{'s' if n_err > 1 else ''}" if n_err else "")
+            )
+
+        rows_html = ""
+        for r in all_results:
+            fname = r["Filename"]
+            status = r["Status"]
+            if status == "Completed":
+                badge = '<span class="ari-badge ok">Completed</span>'
+            else:
+                short = status[:60] + "…" if len(status) > 60 else status
+                badge = f'<span class="ari-badge err">{short}</span>'
+            rows_html += (
+                f'<div class="ari-status-row">'
+                f'<span class="ari-status-fname">{fname}</span>'
+                f'{badge}'
+                f'</div>'
+            )
+
+        st.markdown(
+            f'<div class="ari-status-summary">'
+            f'<div class="ari-status-header {header_cls}">{header_icon}&nbsp; {header_text}</div>'
+            f'<div class="ari-status-rows">{rows_html}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
         # ── Results table ──────────────────────────────────────────────────────
         st.markdown('<p class="ari-section">Measurement Results</p>', unsafe_allow_html=True)
