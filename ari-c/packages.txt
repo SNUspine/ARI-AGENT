@@ -1,0 +1,2 @@
+tesseract-ocr
+fonts-dejavu-core

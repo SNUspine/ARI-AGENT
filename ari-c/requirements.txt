@@ -1,0 +1,12 @@
+streamlit
+onnxruntime
+opencv-python-headless
+scikit-image
+numpy
+scipy
+Pillow
+openpyxl
+sympy
+pandas
+pydicom
+pytesseract
