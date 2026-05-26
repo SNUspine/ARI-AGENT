@@ -18,6 +18,11 @@ MIN_COMPONENT_AREA = 5
 SCALE_BAR_MM = 50  # 스케일 바 기본값 (50mm)
 MIN_SPINE_WIDTH = 150  # 최소 척추 영역 너비 (픽셀)
 
+# C7 영역 추가 대조 보정 파라미터
+C7_REGION_RATIO = 0.45   # 하위 45%를 C7 영역으로 처리
+C7_CLAHE_CLIP   = 60     # 전역(100)보다 낮되 국소적으로 세밀하게
+C7_CLAHE_TILE   = 16     # 전역(32)보다 작은 타일 → 더 세밀한 국소 대조
+
 
 def detect_spine_regions(gray_img):
     """
@@ -158,10 +163,10 @@ def extract_metadata_from_image(gray_img):
         import sys
         # Tesseract 경로 설정 (Windows) - 번들 버전 우선
         tesseract_paths = []
-        # 1. exe와 같은 폴더의 Tesseract-OCR (번들 버전)
         if getattr(sys, 'frozen', False):
             exe_dir = os.path.dirname(sys.executable)
-            tesseract_paths.append(os.path.join(exe_dir, 'Tesseract-OCR', 'tesseract.exe'))
+            # 1. _internal 폴더 내부의 Tesseract-OCR (번들 버전)
+            tesseract_paths.append(os.path.join(exe_dir, '_internal', 'Tesseract-OCR', 'tesseract.exe'))
         # 2. 시스템 설치 버전
         tesseract_paths.append(r'C:\Program Files\Tesseract-OCR\tesseract.exe')
 
@@ -456,6 +461,35 @@ def to_grayscale_uint8(img):
     return img_norm.astype(np.uint8)
 
 
+def should_invert(gray_img):
+    """
+    이미지가 역상인지 판단한다.
+    X선 배경(공기)은 어두운 것이 정상.
+    PACS가 추가한 인위적 검정 테두리(< 10)를 제외한
+    외곽 20% 영역 평균이 128 초과이면 역상으로 판단.
+    Returns True if inversion is needed.
+    """
+    h, w = gray_img.shape[:2]
+    margin_h, margin_w = int(h * 0.2), int(w * 0.2)
+    border_mask = np.zeros((h, w), dtype=bool)
+    border_mask[:margin_h, :] = True
+    border_mask[h - margin_h:, :] = True
+    border_mask[:, :margin_w] = True
+    border_mask[:, w - margin_w:] = True
+    border_pixels = gray_img[border_mask]
+    valid = border_pixels[border_pixels > 10]
+    if len(valid) < 100:
+        return False
+    return valid.mean() > 128
+
+
+def correct_inversion(gray_img):
+    """역상이면 반전, 아니면 그대로 반환."""
+    if should_invert(gray_img):
+        return 255 - gray_img
+    return gray_img
+
+
 def resize_height(img, target_height):
     h, w = img.shape[:2]
     if h == target_height:
@@ -484,14 +518,39 @@ def apply_clahe(img):
     return clahe.apply(img)
 
 
-def preprocess(filepath):
+def enhance_c7_region(clahe_img, padded_orig):
+    """
+    C7 경계 부근(하위 45%)의 밝기/대조를 국소적으로 추가 보정.
+
+    전역 CLAHE(tile=32, clip=100) 후, C7이 위치하는 하부 영역에
+    더 작은 타일(16)로 CLAHE를 재적용하여 겹치는 뼈와의 대조를 개선.
+    원본 padded 이미지를 기반으로 처리해 CLAHE 이중 누적을 방지.
+    """
+    h = padded_orig.shape[0]
+    split_y = int(h * (1.0 - C7_REGION_RATIO))
+    lower = padded_orig[split_y:, :]
+    clahe_local = cv2.createCLAHE(
+        clipLimit=C7_CLAHE_CLIP,
+        tileGridSize=(C7_CLAHE_TILE, C7_CLAHE_TILE)
+    )
+    result = clahe_img.copy()
+    result[split_y:, :] = clahe_local.apply(lower)
+    return result
+
+
+def preprocess(filepath, force_invert=False, force_hflip=False):
     raw, pixel_spacing, dicom_info = load_image(filepath)
-    gray = to_grayscale_uint8(raw)
+    gray = correct_inversion(to_grayscale_uint8(raw))
+    if force_invert:
+        gray = 255 - gray
+    if force_hflip:
+        gray = cv2.flip(gray, 1)  # 좌우 반전
     original_h, original_w = gray.shape[:2]
     resized, scale = resize_height(gray, TARGET_HEIGHT)
     resized_h, resized_w = resized.shape[:2]
     padded, (pad_h, pad_w) = pad_to_multiple(resized, PAD_MULTIPLE)
     clahe_img = apply_clahe(padded)
+    clahe_img = enhance_c7_region(clahe_img, padded)
     tensor = clahe_img.astype(np.float32) / 255.0
     tensor = tensor[np.newaxis, np.newaxis, :, :]
     if raw.ndim == 2:
@@ -506,13 +565,15 @@ def preprocess(filepath):
     return tensor, original_color, scale, resized_h, resized_w, original_h, original_w, pixel_spacing, dicom_info
 
 
-def heatmap2points(heatmaps, affinity_maps):
+def heatmap2points(heatmaps, affinity_maps, threshold=None):
+    if threshold is None:
+        threshold = HEATMAP_THRESHOLD
     num_keypoints = heatmaps.shape[0]
     assert num_keypoints == 4
     keypoints_per_channel = []
     for ch in range(num_keypoints):
         hm = heatmaps[ch]
-        binary = (hm > HEATMAP_THRESHOLD).astype(np.uint8)
+        binary = (hm > threshold).astype(np.uint8)
         labeled, num_features = ndimage.label(binary)
         candidates = []
         for i in range(1, num_features + 1):
@@ -556,6 +617,80 @@ def heatmap2points(heatmaps, affinity_maps):
     return {"C2A": c2a, "C2P": c2p, "C7A": c7a, "C7P": c7p}
 
 
+def heatmap2points_partial(heatmaps, affinity_maps):
+    """
+    Detect keypoints with partial detection support.
+    Returns keypoints dict even if only C2 or C7 is detected.
+    Returns None only if neither C2 nor C7 can be detected.
+    """
+    num_keypoints = heatmaps.shape[0]
+    assert num_keypoints == 4
+    keypoints_per_channel = []
+    for ch in range(num_keypoints):
+        hm = heatmaps[ch]
+        binary = (hm > HEATMAP_THRESHOLD).astype(np.uint8)
+        labeled, num_features = ndimage.label(binary)
+        candidates = []
+        for i in range(1, num_features + 1):
+            component = (labeled == i)
+            area = component.sum()
+            if area < MIN_COMPONENT_AREA:
+                continue
+            weighted = hm.astype(np.float64) * component
+            total = weighted.sum()
+            if total < 1e-6:
+                continue
+            ys, xs = np.where(component)
+            cy = (ys.astype(np.float64) * weighted[ys, xs]).sum() / total
+            cx = (xs.astype(np.float64) * weighted[ys, xs]).sum() / total
+            candidates.append((cx, cy, total))
+        keypoints_per_channel.append(candidates)
+
+    result = {}
+
+    # Try to detect C2 pair (channels 0, 1)
+    c2a_candidates = keypoints_per_channel[0]
+    c2p_candidates = keypoints_per_channel[1]
+    if c2a_candidates and c2p_candidates:
+        best_pair = None
+        best_score = -1
+        for ac in c2a_candidates:
+            for bc in c2p_candidates:
+                ax, ay, a_conf = ac
+                bx, by, b_conf = bc
+                score = score_pair_affinity(ax, ay, bx, by, affinity_maps, a_conf, b_conf)
+                if score > best_score:
+                    best_score = score
+                    best_pair = ((ax, ay), (bx, by))
+        if best_pair is not None:
+            result["C2A"] = best_pair[0]
+            result["C2P"] = best_pair[1]
+
+    # Try to detect C7 pair (channels 2, 3)
+    c7a_candidates = keypoints_per_channel[2]
+    c7p_candidates = keypoints_per_channel[3]
+    if c7a_candidates and c7p_candidates:
+        best_pair = None
+        best_score = -1
+        for ac in c7a_candidates:
+            for bc in c7p_candidates:
+                ax, ay, a_conf = ac
+                bx, by, b_conf = bc
+                score = score_pair_affinity(ax, ay, bx, by, affinity_maps, a_conf, b_conf)
+                if score > best_score:
+                    best_score = score
+                    best_pair = ((ax, ay), (bx, by))
+        if best_pair is not None:
+            result["C7A"] = best_pair[0]
+            result["C7P"] = best_pair[1]
+
+    # Return None only if neither C2 nor C7 detected
+    if not result:
+        return None
+
+    return result
+
+
 def score_pair_affinity(ax, ay, bx, by, affinity_maps, a_conf, b_conf):
     num_samples = 10
     xs = np.linspace(ax, bx, num_samples).astype(int)
@@ -573,6 +708,21 @@ def score_pair_affinity(ax, ay, bx, by, affinity_maps, a_conf, b_conf):
         vy = affinity_maps[1, ys[i], xs[i]]
         aff_score += vx * ux + vy * uy
     return aff_score / num_samples + (a_conf + b_conf) * 0.0001
+
+
+def should_flip_horizontal(keypoints):
+    """
+    검출된 키포인트 배치가 좌우 반전 이미지에서 유래했는지 판단.
+
+    표준 측면 경추 X선: 환자가 오른쪽을 향해 anterior(A)의 x좌표 > posterior(P) x좌표.
+    C2, C7 모두 A.x < P.x 이면 좌우 반전 이미지로 판단하여 True 반환.
+    4개 키포인트가 모두 없으면 False 반환.
+    """
+    if not all(k in keypoints for k in ("C2A", "C2P", "C7A", "C7P")):
+        return False
+    c2_flip = keypoints["C2A"][0] < keypoints["C2P"][0]
+    c7_flip = keypoints["C7A"][0] < keypoints["C7P"][0]
+    return c2_flip and c7_flip
 
 
 def calculate_slope(pa, pp):
@@ -597,11 +747,101 @@ def calculate_sva(keypoints, mm_per_pixel=None):
     return sva_px, None
 
 
+def _find_superior_endplate_dist(gray_img, anchor_pt, direction, width):
+    """
+    anchor_pt에서 direction 방향으로 intensity profile을 분석하여
+    superior endplate까지의 추정 거리를 반환.
+
+    척추체(밝음) → 추간판/연부조직(어둠)으로의 전환 지점을 탐색.
+    실패 시 None 반환.
+    """
+    h, w = gray_img.shape[:2]
+    d_start = max(3, int(width * 0.40))
+    d_end   = int(width * 1.50)
+
+    profile, dists = [], []
+    for d in range(d_start, d_end + 1):
+        pt = np.array(anchor_pt, dtype=np.float64) + direction * d
+        px, py = int(round(pt[0])), int(round(pt[1]))
+        if not (1 <= px < w - 1 and 1 <= py < h - 1):
+            break
+        # 3×3 평균으로 노이즈 억제
+        val = float(gray_img[py - 1:py + 2, px - 1:px + 2].mean())
+        profile.append(val)
+        dists.append(d)
+
+    if len(profile) < 6:
+        return None
+
+    vals = np.array(profile, dtype=np.float32)
+    # 3-point moving average smoothing
+    kernel = np.ones(3, dtype=np.float32) / 3
+    vals_sm = np.convolve(vals, kernel, mode='same')
+
+    # 음의 gradient = intensity 감소 지점 (body → disc 전환)
+    neg_grad = -np.gradient(vals_sm.astype(np.float64))
+    peak_idx = int(np.argmax(neg_grad))
+
+    # 최소 gradient 크기 확인 (noise와 구분)
+    if neg_grad[peak_idx] < 3.0:
+        return None
+
+    # mode='same' convolution 경계 효과로 인한 극단값 제외
+    if peak_idx == 0 or peak_idx == len(neg_grad) - 1:
+        return None
+
+    return float(dists[peak_idx])
+
+
+def _refine_c7up_corner(gray_img, estimated_pt, search_radius):
+    """
+    C7UP 전용 코너 검출.
+    수직 엣지(posterior wall)와 수평 엣지(superior endplate)가
+    동시에 강한 지점 = corner score 최대 지점을 반환.
+    Generic Shi-Tomasi 대신 |Gx| × |Gy| 응답으로 방향성 필터링.
+    """
+    h, w = gray_img.shape[:2]
+    cx, cy = int(round(estimated_pt[0])), int(round(estimated_pt[1]))
+
+    x1 = max(0, cx - search_radius)
+    y1 = max(0, cy - search_radius)
+    x2 = min(w, cx + search_radius)
+    y2 = min(h, cy + search_radius)
+
+    if x2 - x1 < 8 or y2 - y1 < 8:
+        return None
+
+    roi = gray_img[y1:y2, x1:x2]
+
+    # 국소 CLAHE로 엣지 강화
+    clahe = cv2.createCLAHE(clipLimit=40, tileGridSize=(4, 4))
+    roi_enh = clahe.apply(roi)
+    roi_f = roi_enh.astype(np.float32)
+
+    # Sobel gradients
+    gx = cv2.Sobel(roi_f, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(roi_f, cv2.CV_32F, 0, 1, ksize=3)
+
+    # |Gx| × |Gy|: 수직 엣지와 수평 엣지가 동시에 강한 지점이 진짜 코너
+    corner_map = np.abs(gx) * np.abs(gy)
+    corner_map = cv2.GaussianBlur(corner_map, (3, 3), 0)
+
+    max_val = float(corner_map.max())
+    mean_val = float(corner_map.mean())
+    if max_val < 50 or max_val < mean_val * 3:
+        return None
+
+    best_y, best_x = np.unravel_index(corner_map.argmax(), corner_map.shape)
+    return (float(best_x + x1), float(best_y + y1))
+
+
 def estimate_c7up(keypoints, gray_img=None):
     """
-    C7UP (right upper corner) 추정.
-    1차: 기하학적 추정 (C7P에서 수직 위쪽으로)
-    2차: gray_img가 있으면 추정 위치 주변에서 실제 코너 검출
+    C7UP (superior posterior corner) 추정.
+    1차: C7P에서 intensity profile로 superior endplate 위치 추정
+         (척추체 밝음→추간판 어둠 전환 지점 탐색, 실패 시 너비×0.8 fallback)
+    2차: |Gx|×|Gy| 기반 방향성 코너 검출로 refine
+         (posterior wall + superior endplate 교차점 특정)
     """
     c7a = np.array(keypoints["C7A"])
     c7p = np.array(keypoints["C7P"])
@@ -618,15 +858,22 @@ def estimate_c7up(keypoints, gray_img=None):
     if perp[1] > 0:
         perp = -perp
 
-    # 추체 높이 추정 (너비의 0.8배)
+    # 1차: intensity profile로 추체 높이 추정, 실패 시 너비×0.8 사용
+    # raw gray는 CLAHE 미적용일 수 있으므로 국소 대조 향상 후 전달
     height = width * 0.8
+    if gray_img is not None:
+        _clahe_est = cv2.createCLAHE(clipLimit=40, tileGridSize=(16, 16))
+        gray_enhanced = _clahe_est.apply(gray_img)
+        dist = _find_superior_endplate_dist(gray_enhanced, c7p, perp, width)
+        if dist is not None:
+            height = dist
 
-    # 1차 추정: C7P + 수직방향 * 높이
     c7up_est = c7p + perp * height
 
-    # 2차: 이미지에서 실제 코너 검출
+    # 2차: 방향성 gradient 기반 코너 검출 (좁은 반경으로 오탐 억제)
     if gray_img is not None:
-        c7up_refined = refine_corner(gray_img, c7up_est, search_radius=int(width * 0.3))
+        search_r = max(5, int(width * 0.20))
+        c7up_refined = _refine_c7up_corner(gray_img, c7up_est, search_r)
         if c7up_refined is not None:
             return c7up_refined
 
@@ -635,7 +882,7 @@ def estimate_c7up(keypoints, gray_img=None):
 
 def refine_corner(gray_img, estimated_pt, search_radius=30):
     """
-    추정 위치 주변에서 실제 코너를 찾아 반환.
+    추정 위치 주변에서 실제 코너를 찾아 반환. (C2 등 범용)
     """
     h, w = gray_img.shape[:2]
     cx, cy = int(round(estimated_pt[0])), int(round(estimated_pt[1]))
@@ -698,9 +945,17 @@ def calculate_measurements(keypoints, mm_per_pixel=None):
 
 
 class C2C7Inference:
-    def __init__(self):
-        model_path = get_model_path()
-        self.session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
+    def __init__(self, session=None):
+        if session is not None:
+            self.session = session
+        else:
+            model_path = get_model_path()
+            if model_path is None:
+                raise FileNotFoundError("Model file not found. Place c2c7.onnx in the app directory.")
+            opts = ort.SessionOptions()
+            opts.intra_op_num_threads = 1
+            opts.inter_op_num_threads = 1
+            self.session = ort.InferenceSession(model_path, sess_options=opts, providers=["CPUExecutionProvider"])
         self.input_name = self.session.get_inputs()[0].name
 
     def _preprocess_image(self, gray_img):
@@ -710,59 +965,190 @@ class C2C7Inference:
         resized_h, resized_w = resized.shape[:2]
         padded, (pad_h, pad_w) = pad_to_multiple(resized, PAD_MULTIPLE)
         clahe_img = apply_clahe(padded)
+        clahe_img = enhance_c7_region(clahe_img, padded)
         tensor = clahe_img.astype(np.float32) / 255.0
         tensor = tensor[np.newaxis, np.newaxis, :, :]
         return tensor, scale, resized_h, resized_w
 
-    def _run_inference_on_image(self, color_img, pixel_spacing=None):
-        """Run inference on a single color image."""
-        gray = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
-        tensor, scale, resized_h, resized_w = self._preprocess_image(gray)
+    def _run_inference_on_image(self, color_img, pixel_spacing=None, needs_invert=False):
+        """Run inference on a single color image (multi-spine sub-image용).
+        needs_invert: run_multi()에서 전체 이미지 기준으로 판단한 역상 여부.
+        sub-image 경계는 몸통으로 채워져 있어 극성 재감지가 부정확하므로
+        전체 이미지의 판단 결과를 그대로 사용하고, threshold/hflip만 재시도.
 
-        outputs = self.session.run(None, {self.input_name: tensor})
-        output = outputs[0][0]
-        heatmaps_padded = output[:4]
-        affinity_padded = output[4:6]
-        heatmaps = heatmaps_padded[:, :resized_h, :resized_w]
-        affinity = affinity_padded[:, :resized_h, :resized_w]
-        heatmaps_uint8 = np.clip(heatmaps * 255, 0, 255).astype(np.uint8)
+        최적화: (invert, hflip) 조합당 ONNX 추론 1회, threshold만 재시도.
+        """
+        gray_orig = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
+        orig_w = gray_orig.shape[1]
 
-        keypoints = heatmap2points(heatmaps_uint8, affinity)
+        # threshold × 좌우반전 조합으로 최대 4회 시도 (극성은 호출자가 결정)
+        # (None, False)와 (64, False)는 동일 gray → 동일 ONNX 출력 캐싱
+        sub_attempts = [
+            (None, False),  # 1차: thr=127
+            (64,   False),  # 2차: thr=64
+            (None, True),   # 3차: thr=127, hflip
+            (64,   True),   # 4차: thr=64, hflip
+        ]
+        keypoints = None
+        used_hflip = False
+        used_scale = 1.0
+        keypoints_fallback = None
+        hflip_fallback = False
+        scale_fallback = 1.0
+
+        # ONNX 출력 캐시: do_flip → (raw_outputs, scale, resized_h, resized_w)
+        output_cache = {}
+
+        for thr, do_flip in sub_attempts:
+            if do_flip not in output_cache:
+                gray = gray_orig.copy()
+                if needs_invert:
+                    gray = 255 - gray
+                if do_flip:
+                    gray = cv2.flip(gray, 1)
+                resized, scale = resize_height(gray, TARGET_HEIGHT)
+                resized_h, resized_w = resized.shape[:2]
+                padded, _ = pad_to_multiple(resized, PAD_MULTIPLE)
+                clahe_img = apply_clahe(padded)
+                clahe_img = enhance_c7_region(clahe_img, padded)
+                tensor = clahe_img.astype(np.float32) / 255.0
+                tensor = tensor[np.newaxis, np.newaxis, :, :]
+                raw_outputs = self.session.run(None, {self.input_name: tensor})
+                output_cache[do_flip] = (raw_outputs, scale, resized_h, resized_w)
+
+            raw_outputs, scale, resized_h, resized_w = output_cache[do_flip]
+            output = raw_outputs[0][0]
+            heatmaps = output[:4, :resized_h, :resized_w]
+            affinity = output[4:6, :resized_h, :resized_w]
+            heatmaps_uint8 = np.clip(heatmaps * 255, 0, 255).astype(np.uint8)
+            keypoints = heatmap2points(heatmaps_uint8, affinity, threshold=thr)
+
+            if keypoints is not None:
+                if not do_flip and should_flip_horizontal(keypoints):
+                    if keypoints_fallback is None:
+                        keypoints_fallback = keypoints
+                        hflip_fallback = False
+                        scale_fallback = scale
+                    keypoints = None
+                    continue
+                used_hflip = do_flip
+                used_scale = scale
+                break
+
+        if keypoints is None and keypoints_fallback is not None:
+            keypoints = keypoints_fallback
+            used_hflip = hflip_fallback
+            used_scale = scale_fallback
+
         if keypoints is None:
             raise RuntimeError("Could not detect all 4 keypoints (C2A, C2P, C7A, C7P)")
 
         keypoints_original = {}
         for name, (x, y) in keypoints.items():
-            keypoints_original[name] = (x / scale, y / scale)
+            if used_hflip:
+                x_orig = (orig_w - 1) - (x / used_scale)
+            else:
+                x_orig = x / used_scale
+            keypoints_original[name] = (x_orig, y / used_scale)
 
-        # C7UP estimation
-        keypoints_original["C7UP"] = estimate_c7up(keypoints_original, gray)
+        # C7UP estimation (원본 이미지 좌표 기준)
+        keypoints_original["C7UP"] = estimate_c7up(keypoints_original, gray_orig)
 
         # mm/pixel ratio
         mm_per_pixel = pixel_spacing
         if mm_per_pixel is None:
-            mm_per_pixel = detect_scale_bar(gray)
+            mm_per_pixel = detect_scale_bar(gray_orig)
 
         measurements = calculate_measurements(keypoints_original, mm_per_pixel)
         return measurements, keypoints_original
 
-    def run(self, filepath):
-        """Run inference on a single image file (original method)."""
-        tensor, original_color, scale, resized_h, resized_w, orig_h, orig_w, pixel_spacing, dicom_info = preprocess(filepath)
-        outputs = self.session.run(None, {self.input_name: tensor})
-        output = outputs[0][0]
-        heatmaps_padded = output[:4]
-        affinity_padded = output[4:6]
-        heatmaps = heatmaps_padded[:, :resized_h, :resized_w]
-        affinity = affinity_padded[:, :resized_h, :resized_w]
-        heatmaps_uint8 = np.clip(heatmaps * 255, 0, 255).astype(np.uint8)
-        keypoints = heatmap2points(heatmaps_uint8, affinity)
+    def _run_from_gray(self, gray_base, original_color, pixel_spacing, dicom_info):
+        """로드된 gray 이미지로부터 추론 실행 (파일 재로드/OCR 없음).
+
+        최적화: (force_inv, force_hflip) 조합당 ONNX 추론 1회 수행 후 캐싱.
+        동일 gray에 threshold만 다른 시도는 캐싱된 출력을 재사용하므로
+        최대 ONNX 호출 횟수: 4회 (이전 8회에서 절감).
+        """
+        orig_w = gray_base.shape[1]
+
+        # 극성(정/역) × 좌우반전 조합별로 threshold를 달리해 최대 8회 시도.
+        # 같은 (force_inv, force_hflip) 조합은 동일 gray → ONNX 출력 캐싱.
+        attempts = [
+            (False, None,  False),  # 1차: 자동극성, thr=127
+            (True,  None,  False),  # 2차: 반대극성, thr=127
+            (False, 64,    False),  # 3차: 자동극성, thr=64  (1차와 동일 gray → 캐시)
+            (True,  64,    False),  # 4차: 반대극성, thr=64  (2차와 동일 gray → 캐시)
+            (False, None,  True),   # 5차: 좌우반전, thr=127
+            (True,  None,  True),   # 6차: 좌우반전+역상, thr=127
+            (False, 64,    True),   # 7차: 좌우반전, thr=64  (5차와 동일 gray → 캐시)
+            (True,  64,    True),   # 8차: 좌우반전+역상, thr=64 (6차와 동일 gray → 캐시)
+        ]
+        keypoints = None
+        hflip_applied = False
+        scale_used = 1.0
+        keypoints_fallback = None
+        hflip_fallback = False
+        scale_fallback = 1.0
+
+        # ONNX 출력 캐시: (force_inv, force_hflip) → (raw_outputs, scale, resized_h, resized_w)
+        output_cache = {}
+
+        for force_inv, thr, force_hflip in attempts:
+            cache_key = (force_inv, force_hflip)
+            if cache_key not in output_cache:
+                gray = gray_base.copy()
+                if force_inv:
+                    gray = 255 - gray
+                if force_hflip:
+                    gray = cv2.flip(gray, 1)
+                resized, scale = resize_height(gray, TARGET_HEIGHT)
+                resized_h, resized_w = resized.shape[:2]
+                padded, _ = pad_to_multiple(resized, PAD_MULTIPLE)
+                clahe_img = apply_clahe(padded)
+                clahe_img = enhance_c7_region(clahe_img, padded)
+                tensor = clahe_img.astype(np.float32) / 255.0
+                tensor = tensor[np.newaxis, np.newaxis, :, :]
+                raw_outputs = self.session.run(None, {self.input_name: tensor})
+                output_cache[cache_key] = (raw_outputs, scale, resized_h, resized_w)
+
+            raw_outputs, scale, resized_h, resized_w = output_cache[cache_key]
+            output = raw_outputs[0][0]
+            heatmaps = output[:4, :resized_h, :resized_w]
+            affinity = output[4:6, :resized_h, :resized_w]
+            heatmaps_uint8 = np.clip(heatmaps * 255, 0, 255).astype(np.uint8)
+            keypoints = heatmap2points(heatmaps_uint8, affinity, threshold=thr)
+
+            if keypoints is not None:
+                if not force_hflip and should_flip_horizontal(keypoints):
+                    # 방향 불일치 → hflip 시도를 우선하되, 결과를 fallback으로 보존
+                    if keypoints_fallback is None:
+                        keypoints_fallback = keypoints
+                        hflip_fallback = False
+                        scale_fallback = scale
+                    keypoints = None
+                    continue
+                hflip_applied = force_hflip
+                scale_used = scale
+                break
+
+        # hflip 시도가 모두 실패하면 방향 불일치 결과를 fallback으로 사용
+        if keypoints is None and keypoints_fallback is not None:
+            keypoints = keypoints_fallback
+            hflip_applied = hflip_fallback
+            scale_used = scale_fallback
+
         if keypoints is None:
             raise RuntimeError("Could not detect all 4 keypoints (C2A, C2P, C7A, C7P)")
+
         keypoints_original = {}
         for name, (x, y) in keypoints.items():
-            keypoints_original[name] = (x / scale, y / scale)
-        # C7UP 추정 (right upper corner) - grayscale 이미지로 코너 검출
+            if hflip_applied:
+                x_orig = (orig_w - 1) - (x / scale_used)
+            else:
+                x_orig = x / scale_used
+            keypoints_original[name] = (x_orig, y / scale_used)
+
+        # C7UP 추정 (원본 이미지 기준)
         gray_original = cv2.cvtColor(original_color, cv2.COLOR_BGR2GRAY)
         keypoints_original["C7UP"] = estimate_c7up(keypoints_original, gray_original)
         # mm/pixel 비율: DICOM이면 PixelSpacing, 아니면 스케일 바 감지
@@ -771,6 +1157,20 @@ class C2C7Inference:
             mm_per_pixel = detect_scale_bar(gray_original)
         measurements = calculate_measurements(keypoints_original, mm_per_pixel)
         return measurements, keypoints_original, original_color, dicom_info
+
+    def run(self, filepath):
+        """Run inference on a single image file."""
+        raw, pixel_spacing, dicom_info = load_image(filepath)
+        gray_base = correct_inversion(to_grayscale_uint8(raw))
+
+        if raw.ndim == 2:
+            original_color = cv2.cvtColor(to_grayscale_uint8(raw), cv2.COLOR_GRAY2BGR)
+        elif raw.ndim == 3 and raw.shape[2] == 3 and raw.dtype == np.uint8:
+            original_color = raw.copy()
+        else:
+            original_color = cv2.cvtColor(to_grayscale_uint8(raw), cv2.COLOR_GRAY2BGR)
+
+        return self._run_from_gray(gray_base, original_color, pixel_spacing, dicom_info)
 
     def run_multi(self, filepath):
         """
@@ -789,30 +1189,33 @@ class C2C7Inference:
         region_index: 0 for single/first spine, 1 for second, etc.
         For single spine images, returns a list with one element.
         """
-        # Load image and get metadata
+        # Load image and get metadata (1회만 수행)
         raw, pixel_spacing, dicom_info = load_image(filepath)
-        gray = to_grayscale_uint8(raw)
+        gray_orig = to_grayscale_uint8(raw)
 
-        # Convert to color
+        # 역상 여부를 전체 이미지 기준으로 한 번만 판단
+        needs_invert = should_invert(gray_orig)
+
+        # 표시용 original_color 및 영역 검출은 원본 기준으로 유지
         if raw.ndim == 2:
-            original_color = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-        elif raw.ndim == 3 and raw.shape[2] == 3:
-            if raw.dtype != np.uint8:
-                original_color = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-            else:
-                original_color = raw.copy()
+            original_color = cv2.cvtColor(gray_orig, cv2.COLOR_GRAY2BGR)
+        elif raw.ndim == 3 and raw.shape[2] == 3 and raw.dtype == np.uint8:
+            original_color = raw.copy()
         else:
-            original_color = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+            original_color = cv2.cvtColor(gray_orig, cv2.COLOR_GRAY2BGR)
 
-        # Detect spine regions
-        regions = detect_spine_regions(gray)
+        # Detect spine regions on original gray (dark dividers must remain dark)
+        regions = detect_spine_regions(gray_orig)
 
         results = []
 
         if len(regions) == 1:
-            # Single spine - use original method
+            # 단일 척추: 이미 로드된 데이터 재사용 (파일 재로드/OCR 없음)
             try:
-                measurements, keypoints, _, _ = self.run(filepath)
+                gray_base = correct_inversion(gray_orig)
+                measurements, keypoints, _, _ = self._run_from_gray(
+                    gray_base, original_color, pixel_spacing, dicom_info
+                )
                 results.append((measurements, keypoints, original_color, dicom_info, 0))
             except Exception as e:
                 raise RuntimeError(f"Analysis failed: {str(e)}")
@@ -822,7 +1225,7 @@ class C2C7Inference:
 
             for idx, (sub_img, x_offset) in enumerate(sub_images):
                 try:
-                    measurements, keypoints = self._run_inference_on_image(sub_img, pixel_spacing)
+                    measurements, keypoints = self._run_inference_on_image(sub_img, pixel_spacing, needs_invert=needs_invert)
                     # Keypoints are in sub_image coordinates (no offset needed for drawing on sub_image)
                     results.append((measurements, keypoints, sub_img, dicom_info, idx))
                 except Exception as e:
