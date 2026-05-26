@@ -19,7 +19,7 @@ MAX_FILE_SIZE_MB = 10
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 st.set_page_config(
-    page_title="ARI-C · C-lat Analyzer",
+    page_title="ARI-C · C-spine Lateral Radiograph Analyzer",
     page_icon="🦴",
     layout="wide",
 )
@@ -216,8 +216,8 @@ st.markdown("""
 <div class="ari-header">
   <a href="https://ariagent.co.kr" class="ari-back">← ariagent.co.kr</a>
   <p class="ari-eyebrow">ARI-C &nbsp;·&nbsp; C-Spine Module</p>
-  <h1 class="ari-title">C-lat Analyzer</h1>
-  <p class="ari-sub">C2–C7 Cervical Spine Cobb Angle Measurement</p>
+  <h1 class="ari-title">C-spine Lateral Radiograph Analyzer</h1>
+  <p class="ari-sub">C2–C7 Cervical Spine Cobb Angle, C2 Sagittal Vertical Axis, C7 slope Measurement</p>
 </div>
 """, unsafe_allow_html=True)
 
