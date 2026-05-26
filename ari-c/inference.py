@@ -461,57 +461,62 @@ def to_grayscale_uint8(img):
     return img_norm.astype(np.uint8)
 
 
-def auto_crop_screen_photo(gray_img, min_keep_ratio=0.4, min_crop_gain=0.05):
+def auto_crop_screen_photo(gray_img, min_keep_ratio=0.4, min_crop_gain=0.03):
     """
-    Remove dark borders (desk, monitor bezel) from phone photos of PACS screens.
-    Samples outer edge brightness to detect desk/bezel and sets adaptive threshold.
+    Remove dark monitor bezel / desk borders from phone photos of PACS screens.
+    Detects contiguous dark bands using row/column mean profiles.
     Returns (cropped_gray, (x1, y1, x2, y2)) or (original_gray, None).
     """
     h, w = gray_img.shape[:2]
 
-    # Sample outermost ~3% strip on each edge to measure border brightness
-    bh = max(5, h // 30)
-    bw = max(5, w // 30)
-    top_m    = float(np.mean(gray_img[:bh, :]))
-    bottom_m = float(np.mean(gray_img[-bh:, :]))
-    left_m   = float(np.mean(gray_img[:, :bw]))
-    right_m  = float(np.mean(gray_img[:, -bw:]))
-
-    darkest_edge = min(top_m, bottom_m, left_m, right_m)
-
-    # Skip if no edge is very dark — not a phone photo / desk border scenario
-    if darkest_edge > 20:
+    bh, bw = max(5, h // 30), max(5, w // 30)
+    outer_bright = max(
+        float(np.mean(gray_img[:bh, :])), float(np.mean(gray_img[-bh:, :])),
+        float(np.mean(gray_img[:, :bw])), float(np.mean(gray_img[:, -bw:])),
+    )
+    # Phone photos have medium-bright outer edge (desk ~75). Regular X-rays have dark edges (~5-20).
+    if outer_bright < 30:
         return gray_img, None
 
-    # Adaptive threshold: just above the measured border darkness
-    dark_thresh = max(darkest_edge + 12, 15)
-    dark_thresh = min(dark_thresh, 30)
+    row_m = np.mean(gray_img, axis=1).astype(np.float32)
+    col_m = np.mean(gray_img, axis=0).astype(np.float32)
+    BT, MB = 25, 10  # bezel brightness threshold, min contiguous band pixels
 
-    # Row/column mean profiles — scan inward from each edge
-    row_means = np.mean(gray_img, axis=1).astype(np.float32)
-    col_means = np.mean(gray_img, axis=0).astype(np.float32)
+    def crop_end(means, total, limit):
+        i = total - 1
+        while i >= limit:
+            if means[i] < BT:
+                j = i
+                while j > 0 and means[j - 1] < BT:
+                    j -= 1
+                if i - j + 1 >= MB:
+                    return j
+                i = j
+            i -= 1
+        return total
 
-    y1 = 0
-    while y1 < h - 1 and row_means[y1] <= dark_thresh:
-        y1 += 1
-    y2 = h - 1
-    while y2 > y1 and row_means[y2] <= dark_thresh:
-        y2 -= 1
-    y2 += 1
+    def crop_start(means, total, limit):
+        i = 0
+        while i <= limit:
+            if means[i] < BT:
+                j = i
+                while j < total - 1 and means[j + 1] < BT:
+                    j += 1
+                if j - i + 1 >= MB:
+                    return j + 1
+                i = j
+            i += 1
+        return 0
 
-    x1 = 0
-    while x1 < w - 1 and col_means[x1] <= dark_thresh:
-        x1 += 1
-    x2 = w - 1
-    while x2 > x1 and col_means[x2] <= dark_thresh:
-        x2 -= 1
-    x2 += 1
+    y2 = crop_end(row_m, h, h // 2)
+    y1 = crop_start(row_m, h, int(h * 0.3))
+    x2 = crop_end(col_m, w, w // 2)
+    x1 = crop_start(col_m, w, int(w * 0.3))
 
-    crop_h, crop_w = y2 - y1, x2 - x1
-    if crop_h < h * min_keep_ratio or crop_w < w * min_keep_ratio:
+    ch, cw = y2 - y1, x2 - x1
+    if ch < h * min_keep_ratio or cw < w * min_keep_ratio:
         return gray_img, None
-    removed = 1.0 - (crop_h * crop_w) / (h * w)
-    if removed < min_crop_gain:
+    if 1.0 - (ch * cw) / (h * w) < min_crop_gain:
         return gray_img, None
 
     return gray_img[y1:y2, x1:x2], (x1, y1, x2, y2)
