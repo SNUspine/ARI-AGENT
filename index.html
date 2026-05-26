@@ -111,6 +111,33 @@
     }
     .btn-nav:hover { background: rgba(255,255,255,.12); }
 
+    .lang-toggle {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .lang-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: inherit;
+      letter-spacing: .06em;
+      transition: all .15s;
+    }
+    .lang-btn.active {
+      background: rgba(255,255,255,.1);
+      color: var(--white);
+    }
+    .lang-btn:hover:not(.active) { color: var(--white); }
+
     /* ─── Hero ─────────────────────────────────────────────── */
     .hero {
       min-height: 100svh;
@@ -704,10 +731,14 @@
       .footer-links { gap: 32px; }
       .footer-bottom { flex-direction: column; align-items: flex-start; }
       .footer-disclaimer { text-align: left; }
-      .nav-links { display: none; }
+      .nav-links { gap: 16px; margin-left: 16px; }
+      .nav-links a { font-size: 12px; }
     }
 
     @media (max-width: 600px) {
+      .nav-links { gap: 10px; margin-left: 10px; }
+      .nav-links a { font-size: 11px; }
+      .lang-btn { font-size: 10px; padding: 3px 6px; }
       .hero-title { letter-spacing: -2px; }
       .section-title { letter-spacing: -1px; }
       .promise-title { letter-spacing: -2px; }
@@ -724,11 +755,15 @@
     <span class="nav-logo-text">ARI Agent</span>
   </a>
   <div class="nav-links">
-    <a href="#modules">모듈</a>
-    <a href="/about.html">소개</a>
-    <a href="mailto:imspinesurgeon@gmail.com">문의</a>
+    <a href="#modules" data-i18n="nav-modules">모듈</a>
+    <a href="/about.html" data-i18n="nav-about">소개</a>
+    <a href="mailto:imspinesurgeon@gmail.com" data-i18n="nav-contact">문의</a>
   </div>
   <div class="nav-right">
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="ko" onclick="setLang('ko')">KO</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+    </div>
     <button class="btn-nav" onclick="alert('로그인 기능은 준비 중입니다.')">Sign In</button>
   </div>
 </nav>
@@ -737,10 +772,10 @@
 <section class="hero">
   <p class="hero-eyebrow">AI RESEARCH INSTRUMENTS</p>
   <h1 class="hero-title">AI for<br /><em>Spine Analysis.</em></h1>
-  <p class="hero-sub">인공지능으로 구현한 척추 영상 분석 플랫폼. 임상 진료와 방대한 영상분석 연구를 위한 분석을 위한 정밀 AI 도구.</p>
+  <p class="hero-sub" data-i18n="hero-sub">인공지능으로 구현한 척추 영상 분석 플랫폼. 임상 진료와 방대한 영상분석 연구를 위한 정밀 AI 도구.</p>
   <div class="hero-ctas">
-    <a href="#modules" class="btn-primary">모듈 탐색 →</a>
-    <a href="mailto:imspinesurgeon@gmail.com" class="btn-ghost">프로그램 구매문의</a>
+    <a href="#modules" class="btn-primary" data-i18n="hero-cta-primary">모듈 탐색 →</a>
+    <a href="mailto:imspinesurgeon@gmail.com" class="btn-ghost" data-i18n="hero-cta-ghost">프로그램 구매문의</a>
   </div>
   <div class="hero-scroll">
     <div class="hero-scroll-line"></div>
@@ -762,31 +797,30 @@
 
     <div class="featured-body">
       <div class="featured-tag">
-        <span class="dot"></span>
-        지금 이용 가능
+        <span class="dot"></span><span data-i18n="featured-available">지금 이용 가능</span>
       </div>
       <p class="featured-label">ARI-C</p>
       <h2 class="featured-title">C-spine Sagittal<br />Analysis</h2>
-      <p class="featured-desc">
+      <p class="featured-desc" data-i18n="featured-desc">
         측면 X-ray 한 장으로 C2-C7 Cobb angle, SVA, C7 slope를 자동 측정합니다.
         DICOM · JPG · PNG · BMP 등 다양한 이미지 포맷을 지원하며 Excel 일괄 다운로드가 가능합니다.
       </p>
       <div class="featured-stats">
         <div class="stat-item">
           <div class="stat-value">C2–C7</div>
-          <div class="stat-label">전체 경추 분석</div>
+          <div class="stat-label" data-i18n="stat-cervical">전체 경추 분석</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value"> DICOM+α</div>
-          <div class="stat-label">여러 지원 파일 포맷</div>
+          <div class="stat-value">DICOM+α</div>
+          <div class="stat-label" data-i18n="stat-format">여러 지원 파일 포맷</div>
         </div>
         <div class="stat-item">
           <div class="stat-value">Batch</div>
-          <div class="stat-label">대용량 처리</div>
+          <div class="stat-label" data-i18n="stat-batch">대용량 처리</div>
         </div>
       </div>
       <a href="https://ariagent-c.streamlit.app" target="_blank" rel="noopener" class="featured-cta">
-        앱 시작하기 <span class="arrow">→</span>
+        <span data-i18n="featured-cta">앱 시작하기</span> <span class="arrow">→</span>
       </a>
     </div>
 
@@ -799,8 +833,8 @@
 <section class="modules" id="about">
   <div class="section-header">
     <p class="section-eyebrow">Research Pipeline</p>
-    <h2 class="section-title">준비 중인 모듈</h2>
-    <p class="section-desc">임상 데이터 기반 훈련 모델이 순차적으로 공개됩니다.</p>
+    <h2 class="section-title" data-i18n="modules-title">준비 중인 모듈</h2>
+    <p class="section-desc" data-i18n="modules-desc">임상 데이터 기반 훈련 모델이 순차적으로 공개됩니다.</p>
   </div>
 
   <div class="modules-grid">
@@ -814,7 +848,7 @@
         <span class="module-card-tag">Coming Soon</span>
         <p class="module-card-label" style="color: var(--ari-l)">ARI-L</p>
         <h3 class="module-card-title">L-Spine Sagittal Analysis</h3>
-        <p class="module-card-desc">요추 시상 균형 분석. Lumbar lordosis, pelvic incidence, sagittal vertical axis 자동 측정.</p>
+        <p class="module-card-desc" data-i18n="aril-desc">요추 시상 균형 분석. Lumbar lordosis, pelvic incidence, sagittal vertical axis 자동 측정.</p>
       </div>
     </div>
 
@@ -827,7 +861,7 @@
         <span class="module-card-tag">Coming Soon</span>
         <p class="module-card-label" style="color: var(--ari-s)">ARI-S</p>
         <h3 class="module-card-title">Lumbar Stenosis Probability</h3>
-        <p class="module-card-desc">3-view X-ray 기반 요추 협착증 확률 예측. Multi-Pose VGG19-BN + Grad-CAM 시각화.</p>
+        <p class="module-card-desc" data-i18n="aris-desc">3-view X-ray 기반 요추 협착증 확률 예측. Multi-Pose VGG19-BN + Grad-CAM 시각화.</p>
       </div>
     </div>
 
@@ -840,7 +874,7 @@
         <span class="module-card-tag">Coming Soon</span>
         <p class="module-card-label" style="color: var(--ari-p)">ARI-P</p>
         <h3 class="module-card-title">Proximal Junctional Kyphosis Risk</h3>
-        <p class="module-card-desc">척추 교정 수술 후 근위부 인접 후만증 발생 위험도 예측 모델.</p>
+        <p class="module-card-desc" data-i18n="arip-desc">척추 교정 수술 후 근위부 인접 후만증 발생 위험도 예측 모델.</p>
       </div>
     </div>
 
@@ -851,8 +885,8 @@
 
 <!-- ══ Promise ═══════════════════════════════════════════════ -->
 <section class="promise">
-  <h2 class="promise-title">정밀하게.<br /><span>지능적으로.</span><br />임상의를 위해.</h2>
-  <p class="promise-desc" style="margin-top: 20px">모든 모듈은 실제 임상 데이터로 훈련되며, 의료진의 판단을 보조하는 연구 도구로 설계되었습니다.</p>
+  <h2 class="promise-title" data-i18n="promise-title">정밀하게.<br /><span>지능적으로.</span><br />임상의를 위해.</h2>
+  <p class="promise-desc" style="margin-top: 20px" data-i18n="promise-desc">모든 모듈은 실제 임상 데이터로 훈련되며, 의료진의 판단을 보조하는 연구 도구로 설계되었습니다.</p>
 </section>
 
 <!-- ══ Pillars ═══════════════════════════════════════════════ -->
@@ -860,18 +894,18 @@
   <div class="pillars-grid">
     <div class="pillar">
       <div class="pillar-icon">🧠</div>
-      <p class="pillar-title">딥러닝 기반 추론</p>
-      <p class="pillar-desc">VGG19-BN, ResNet50, ONNX 등 검증된 아키텍처. 임상 등급 데이터로 학습된 모델을 제공합니다.</p>
+      <p class="pillar-title" data-i18n="pillar1-title">딥러닝 기반 추론</p>
+      <p class="pillar-desc" data-i18n="pillar1-desc">VGG19-BN, ResNet50, ONNX 등 검증된 아키텍처. 임상 등급 데이터로 학습된 모델을 제공합니다.</p>
     </div>
     <div class="pillar">
       <div class="pillar-icon">🔬</div>
-      <p class="pillar-title">설명 가능한 AI</p>
-      <p class="pillar-desc">Grad-CAM 히트맵과 정량적 측정값으로 AI의 판단 근거를 시각화합니다.</p>
+      <p class="pillar-title" data-i18n="pillar2-title">설명 가능한 AI</p>
+      <p class="pillar-desc" data-i18n="pillar2-desc">Grad-CAM 히트맵과 정량적 측정값으로 AI의 판단 근거를 시각화합니다.</p>
     </div>
     <div class="pillar">
       <div class="pillar-icon">⚡</div>
-      <p class="pillar-title">즉각적인 결과</p>
-      <p class="pillar-desc">업로드 즉시 분석 완료. DICOM · JPG · PNG · BMP 등 다양한 포맷을 지원합니다.</p>
+      <p class="pillar-title" data-i18n="pillar3-title">즉각적인 결과</p>
+      <p class="pillar-desc" data-i18n="pillar3-desc">업로드 즉시 분석 완료. DICOM · JPG · PNG · BMP 등 다양한 포맷을 지원합니다.</p>
     </div>
   </div>
 </section>
@@ -889,25 +923,113 @@
       </div>
       <div class="footer-links">
         <div class="footer-col">
-          <p class="footer-col-title">모듈</p>
+          <p class="footer-col-title" data-i18n="footer-modules-col">모듈</p>
           <a href="https://ariagent-c.streamlit.app" target="_blank" rel="noopener">ARI-C (Active)</a>
           <a href="#modules">ARI-L</a>
           <a href="#modules">ARI-S</a>
           <a href="#modules">ARI-P</a>
         </div>
         <div class="footer-col">
-          <p class="footer-col-title">연구팀</p>
-          <a href="mailto:imspinesurgeon@gmail.com">문의하기</a>
+          <p class="footer-col-title" data-i18n="footer-team-col">연구팀</p>
+          <a href="mailto:imspinesurgeon@gmail.com" data-i18n="footer-contact">문의하기</a>
           <a href="https://github.com/SNUspine" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
     </div>
     <div class="footer-bottom">
       <p class="footer-copy">© 2026 ARI Agent. All rights reserved.</p>
-      <p class="footer-disclaimer">⚠ 본 플랫폼은 연구 보조 목적으로만 사용됩니다. 임상적 진단 및 치료 결정은 반드시 자격을 갖춘 의료 전문가가 수행해야 합니다.</p>
+      <p class="footer-disclaimer" data-i18n="footer-disclaimer">⚠ 본 플랫폼은 연구 보조 목적으로만 사용됩니다. 임상적 진단 및 치료 결정은 반드시 자격을 갖춘 의료 전문가가 수행해야 합니다.</p>
     </div>
   </div>
 </footer>
+
+<script>
+(function () {
+  var T = {
+    ko: {
+      'nav-modules': '모듈',
+      'nav-about': '소개',
+      'nav-contact': '문의',
+      'hero-sub': '인공지능으로 구현한 척추 영상 분석 플랫폼. 임상 진료와 방대한 영상분석 연구를 위한 정밀 AI 도구.',
+      'hero-cta-primary': '모듈 탐색 →',
+      'hero-cta-ghost': '프로그램 구매문의',
+      'featured-available': '지금 이용 가능',
+      'featured-desc': '측면 X-ray 한 장으로 C2–C7 Cobb angle, SVA, C7 slope를 자동 측정합니다. DICOM · JPG · PNG · BMP 등 다양한 이미지 포맷을 지원하며 Excel 일괄 다운로드가 가능합니다.',
+      'stat-cervical': '전체 경추 분석',
+      'stat-format': '여러 지원 파일 포맷',
+      'stat-batch': '대용량 처리',
+      'featured-cta': '앱 시작하기',
+      'modules-title': '준비 중인 모듈',
+      'modules-desc': '임상 데이터 기반 훈련 모델이 순차적으로 공개됩니다.',
+      'aril-desc': '요추 시상 균형 분석. Lumbar lordosis, pelvic incidence, sagittal vertical axis 자동 측정.',
+      'aris-desc': '3-view X-ray 기반 요추 협착증 확률 예측. Multi-Pose VGG19-BN + Grad-CAM 시각화.',
+      'arip-desc': '척추 교정 수술 후 근위부 인접 후만증 발생 위험도 예측 모델.',
+      'promise-title': '정밀하게.<br /><span>지능적으로.</span><br />임상의를 위해.',
+      'promise-desc': '모든 모듈은 실제 임상 데이터로 훈련되며, 의료진의 판단을 보조하는 연구 도구로 설계되었습니다.',
+      'pillar1-title': '딥러닝 기반 추론',
+      'pillar1-desc': 'VGG19-BN, ResNet50, ONNX 등 검증된 아키텍처. 임상 등급 데이터로 학습된 모델을 제공합니다.',
+      'pillar2-title': '설명 가능한 AI',
+      'pillar2-desc': 'Grad-CAM 히트맵과 정량적 측정값으로 AI의 판단 근거를 시각화합니다.',
+      'pillar3-title': '즉각적인 결과',
+      'pillar3-desc': '업로드 즉시 분석 완료. DICOM · JPG · PNG · BMP 등 다양한 포맷을 지원합니다.',
+      'footer-modules-col': '모듈',
+      'footer-team-col': '연구팀',
+      'footer-contact': '문의하기',
+      'footer-disclaimer': '⚠ 본 플랫폼은 연구 보조 목적으로만 사용됩니다. 임상적 진단 및 치료 결정은 반드시 자격을 갖춘 의료 전문가가 수행해야 합니다.'
+    },
+    en: {
+      'nav-modules': 'Modules',
+      'nav-about': 'About',
+      'nav-contact': 'Contact',
+      'hero-sub': 'AI-powered spine imaging analysis platform. Precision AI tools for clinical practice and large-scale imaging research.',
+      'hero-cta-primary': 'Explore Modules →',
+      'hero-cta-ghost': 'Purchase Inquiry',
+      'featured-available': 'Available Now',
+      'featured-desc': 'Automatically measures C2–C7 Cobb angle, SVA, and C7 slope from a single lateral X-ray. Supports DICOM · JPG · PNG · BMP with batch Excel export.',
+      'stat-cervical': 'Full C-spine Analysis',
+      'stat-format': 'Multi-format Support',
+      'stat-batch': 'Batch Processing',
+      'featured-cta': 'Launch App',
+      'modules-title': 'Upcoming Modules',
+      'modules-desc': 'Clinically trained AI models to be released sequentially.',
+      'aril-desc': 'Lumbar sagittal balance analysis. Automated measurement of lumbar lordosis, pelvic incidence, and sagittal vertical axis.',
+      'aris-desc': 'Lumbar stenosis probability prediction from 3-view X-ray. Multi-Pose VGG19-BN with Grad-CAM visualization.',
+      'arip-desc': 'Proximal junctional kyphosis risk prediction model following spinal deformity correction surgery.',
+      'promise-title': 'Precise.<br /><span>Intelligent.</span><br />For Clinicians.',
+      'promise-desc': 'Every module is trained on real clinical data, designed as a research tool to support medical professionals’ judgment.',
+      'pillar1-title': 'Deep Learning Inference',
+      'pillar1-desc': 'Validated architectures including VGG19-BN, ResNet50, and ONNX. Models trained on clinical-grade data.',
+      'pillar2-title': 'Explainable AI',
+      'pillar2-desc': 'Grad-CAM heatmaps and quantitative measurements visualize the reasoning behind AI decisions.',
+      'pillar3-title': 'Instant Results',
+      'pillar3-desc': 'Analysis completes immediately upon upload. Supports DICOM · JPG · PNG · BMP and more.',
+      'footer-modules-col': 'Modules',
+      'footer-team-col': 'Research Team',
+      'footer-contact': 'Contact Us',
+      'footer-disclaimer': '⚠ This platform is intended for research assistance only. Clinical diagnosis and treatment decisions must be made by qualified medical professionals.'
+    }
+  };
+
+  window.setLang = function (lang) {
+    document.documentElement.lang = lang;
+    localStorage.setItem('ari-lang', lang);
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var key = el.dataset.i18n;
+      if (T[lang] && T[lang][key] !== undefined) {
+        el.innerHTML = T[lang][key];
+      }
+    });
+    document.querySelectorAll('.lang-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.lang === lang);
+    });
+  };
+
+  var saved = localStorage.getItem('ari-lang') || 'ko';
+  if (saved === 'en') {
+    document.addEventListener('DOMContentLoaded', function () { setLang('en'); });
+  }
+})();
+</script>
 
 </body>
 </html>
