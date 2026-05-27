@@ -411,40 +411,44 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown(f"""
-<div class="ari-cards">
+_col_d, _col_w = st.columns(2, gap="medium")
 
-  <div class="ari-card">
-    <p class="ari-card-title">💻 On-Device Desktop Version</p>
-    <ul>
-      <li>✅&nbsp; No internet connection required</li>
-      <li>✅&nbsp; No installation required — runs as a standalone app</li>
-      <li>✅&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong> and <strong>clipboard paste</strong></li>
-      <li>✅&nbsp; <strong>Unlimited</strong> file analysis</li>
-      <li>⚡&nbsp; Batch throughput: ~<strong>10,000 images in 4 hours</strong></li>
-    </ul>
-    <div class="ari-card-video">
-      <span>🎬</span>
-      Demo video coming soon
-    </div>
-    <p class="ari-card-contact">Purchase inquiry: <a href="mailto:imspinesurgeon@gmail.com">imspinesurgeon@gmail.com</a></p>
+with _col_d:
+    st.markdown("""
+<div class="ari-card">
+  <p class="ari-card-title">💻 On-Device Desktop Version</p>
+  <ul>
+    <li>✅&nbsp; No internet connection required</li>
+    <li>✅&nbsp; No installation required — runs as a standalone app</li>
+    <li>✅&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong> and <strong>clipboard paste</strong></li>
+    <li>✅&nbsp; <strong>Unlimited</strong> file analysis</li>
+    <li>⚡&nbsp; Batch throughput: ~<strong>10,000 images in 4 hours</strong></li>
+  </ul>
+  <div class="ari-card-video">
+    <span>🎬</span>
+    Demo video coming soon
   </div>
-
-  <div class="ari-card">
-    <p class="ari-card-title">🌐 Web Version</p>
-    <ul>
-      <li>🌐&nbsp; Accessible from any device via browser</li>
-      <li>📁&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong></li>
-      <li>⚠️&nbsp; File size limit: <strong>{MAX_FILE_SIZE_MB} MB per upload</strong></li>
-      <li>📊&nbsp; Excel &amp; ZIP batch download</li>
-    </ul>
-    <a href="https://ariagent-c.streamlit.app" class="ari-card-btn" target="_self">
-      🚀 &nbsp;Launch Web App
-    </a>
-  </div>
-
+  <p class="ari-card-contact">Purchase inquiry: <a href="mailto:imspinesurgeon@gmail.com">imspinesurgeon@gmail.com</a></p>
 </div>
 """, unsafe_allow_html=True)
+
+with _col_w:
+    st.markdown(f"""
+<div class="ari-card" style="margin-bottom:12px">
+  <p class="ari-card-title">🌐 Web Version</p>
+  <ul>
+    <li>🌐&nbsp; Accessible from any device via browser</li>
+    <li>📁&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong></li>
+    <li>⚠️&nbsp; File size limit: <strong>{MAX_FILE_SIZE_MB} MB per upload</strong></li>
+    <li>📊&nbsp; Auto-analysis · Excel &amp; ZIP download</li>
+  </ul>
+</div>
+""", unsafe_allow_html=True)
+    uploaded_files = st.file_uploader(
+        "Upload image files (DICOM · JPG · PNG · BMP)",
+        type=["jpg", "jpeg", "png", "bmp", "dcm"],
+        accept_multiple_files=True,
+    )
 
 
 @st.cache_resource
@@ -468,12 +472,6 @@ def cv2_to_pil(cv_img):
     return Image.fromarray(rgb)
 
 
-uploaded_files = st.file_uploader(
-    "Upload image files",
-    type=["jpg", "jpeg", "png", "bmp", "dcm"],
-    accept_multiple_files=True,
-)
-
 if uploaded_files:
     total_size = sum(f.size for f in uploaded_files)
     oversized_files = [f.name for f in uploaded_files if f.size > MAX_FILE_SIZE_BYTES]
@@ -490,7 +488,10 @@ if uploaded_files:
         """)
         st.stop()
 
-    if st.button("Analyze", type="primary"):
+    # Auto-analyze when file selection changes
+    _file_key = tuple(sorted((f.name, f.size) for f in uploaded_files))
+    if st.session_state.get("_last_file_key") != _file_key:
+        st.session_state["_last_file_key"] = _file_key
         engine = load_engine()
         all_results = []
         result_images = {}
