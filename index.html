@@ -854,17 +854,21 @@
     </div>
 
     <!-- ARI-S -->
-    <div class="module-card">
-      <div class="module-card-image" style="background: radial-gradient(ellipse at 50% 60%, rgba(255,107,107,.07) 0%, transparent 70%);">
+    <a href="https://ariagent-s.streamlit.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
+    <div class="module-card" style="cursor:pointer;">
+      <div class="module-card-image" style="background: radial-gradient(ellipse at 50% 60%, rgba(255,107,107,.12) 0%, transparent 70%);">
         <img src="assets/icon_stenosis.png" alt="ARI-S Stenosis" />
       </div>
       <div class="module-card-body">
-        <span class="module-card-tag">Coming Soon</span>
+        <span class="module-card-tag" style="background:rgba(63,185,80,.12);color:#3fb950;border-color:rgba(63,185,80,.25);">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3fb950;margin-right:5px;animation:pulse 2s infinite;"></span>지금 이용 가능
+        </span>
         <p class="module-card-label" style="color: var(--ari-s)">ARI-S</p>
         <h3 class="module-card-title">Lumbar Stenosis Probability</h3>
-        <p class="module-card-desc" data-i18n="aris-desc">3-view X-ray 기반 요추 협착증 확률 예측. Multi-Pose VGG19-BN + Grad-CAM 시각화.</p>
+        <p class="module-card-desc" data-i18n="aris-desc">3-view X-ray 기반 요추 협착증 확률 예측. Multi-Pose ResNet50 + Grad-CAM 시각화.</p>
       </div>
     </div>
+    </a>
 
     <!-- ARI-P -->
     <div class="module-card">
@@ -927,7 +931,7 @@
           <p class="footer-col-title" data-i18n="footer-modules-col">모듈</p>
           <a href="https://ariagent-c.streamlit.app" target="_blank" rel="noopener">ARI-C (Active)</a>
           <a href="#modules">ARI-W</a>
-          <a href="#modules">ARI-S</a>
+          <a href="https://ariagent-s.streamlit.app" target="_blank" rel="noopener">ARI-S (Active)</a>
           <a href="#modules">ARI-P</a>
         </div>
         <div class="footer-col">
