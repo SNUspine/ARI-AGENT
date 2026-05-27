@@ -299,6 +299,89 @@ hr { border-color: rgba(255,255,255,.07) !important; margin: 32px 0 !important; 
 ::-webkit-scrollbar-track { background: #1d1d1f; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
+
+/* ─── Version cards ── */
+.ari-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 0 0 40px;
+}
+.ari-card {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+    padding: 28px 28px 24px;
+}
+.ari-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f5f5f7;
+    letter-spacing: -.015em;
+    margin: 0 0 18px;
+}
+.ari-card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ari-card li {
+    font-size: 14px;
+    color: #98989d;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.45;
+}
+.ari-card li strong { color: #d1d1d6; }
+.ari-card-video {
+    margin-top: 22px;
+    background: rgba(255,255,255,.025);
+    border: 1px dashed rgba(255,255,255,.1);
+    border-radius: 12px;
+    height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #6e6e73;
+    font-size: 13px;
+    gap: 6px;
+    letter-spacing: .01em;
+}
+.ari-card-video span { font-size: 24px; }
+.ari-card-contact {
+    margin-top: 16px;
+    font-size: 13px;
+    color: #6e6e73;
+}
+.ari-card-contact a { color: #2ec4e8; text-decoration: none; }
+.ari-card-contact a:hover { text-decoration: underline; }
+.ari-card-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 22px;
+    padding: 11px 20px;
+    background: #2ec4e8;
+    color: #000 !important;
+    border-radius: 11px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none !important;
+    letter-spacing: -.01em;
+    transition: opacity .15s;
+    box-sizing: border-box;
+    width: 100%;
+}
+.ari-card-btn:hover { opacity: .82; }
+@media (max-width: 640px) {
+    .ari-cards { grid-template-columns: 1fr; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -325,6 +408,41 @@ st.markdown(f"""
     <span class="ari-chip">PNG</span>
     <span class="ari-chip">BMP</span>
   </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown(f"""
+<div class="ari-cards">
+
+  <div class="ari-card">
+    <p class="ari-card-title">💻 On-Device Desktop Version</p>
+    <ul>
+      <li>✅&nbsp; No internet connection required</li>
+      <li>✅&nbsp; No installation required — runs as a standalone app</li>
+      <li>✅&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong> and <strong>clipboard paste</strong></li>
+      <li>✅&nbsp; <strong>Unlimited</strong> file analysis</li>
+      <li>⚡&nbsp; Batch throughput: ~<strong>10,000 images in 4 hours</strong></li>
+    </ul>
+    <div class="ari-card-video">
+      <span>🎬</span>
+      Demo video coming soon
+    </div>
+    <p class="ari-card-contact">Purchase inquiry: <a href="mailto:imspinesurgeon@gmail.com">imspinesurgeon@gmail.com</a></p>
+  </div>
+
+  <div class="ari-card">
+    <p class="ari-card-title">🌐 Web Version</p>
+    <ul>
+      <li>🌐&nbsp; Accessible from any device via browser</li>
+      <li>📁&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong></li>
+      <li>⚠️&nbsp; File size limit: <strong>{MAX_FILE_SIZE_MB} MB per upload</strong></li>
+      <li>📊&nbsp; Excel &amp; ZIP batch download</li>
+    </ul>
+    <a href="https://ariagent-c.streamlit.app" class="ari-card-btn" target="_self">
+      🚀 &nbsp;Launch Web App
+    </a>
+  </div>
+
 </div>
 """, unsafe_allow_html=True)
 
