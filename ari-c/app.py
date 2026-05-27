@@ -382,6 +382,35 @@ hr { border-color: rgba(255,255,255,.07) !important; margin: 32px 0 !important; 
 @media (max-width: 640px) {
     .ari-cards { grid-template-columns: 1fr; }
 }
+
+/* ─── Standalone list (outside .ari-card) ── */
+.ari-card-list {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ari-card-list li {
+    font-size: 14px;
+    color: #98989d;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.45;
+}
+.ari-card-list li strong { color: #d1d1d6; }
+
+/* ─── Web Version merged container ── */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(255,255,255,.03) !important;
+    border: 1px solid rgba(255,255,255,.08) !important;
+    border-radius: 18px !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] > div {
+    padding: 16px 16px 12px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -433,22 +462,21 @@ with _col_d:
 """, unsafe_allow_html=True)
 
 with _col_w:
-    st.markdown(f"""
-<div class="ari-card" style="margin-bottom:12px">
-  <p class="ari-card-title">🌐 Web Version</p>
-  <ul>
-    <li>🌐&nbsp; Accessible from any device via browser</li>
-    <li>📁&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong></li>
-    <li>⚠️&nbsp; File size limit: <strong>{MAX_FILE_SIZE_MB} MB per upload</strong></li>
-    <li>📊&nbsp; Auto-analysis · Excel &amp; ZIP download</li>
-  </ul>
-</div>
+    with st.container(border=True):
+        st.markdown(f"""
+<p class="ari-card-title">🌐 Web Version</p>
+<ul class="ari-card-list">
+  <li>🌐&nbsp; Accessible from any device via browser</li>
+  <li>📁&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong></li>
+  <li>⚠️&nbsp; File size limit: <strong>{MAX_FILE_SIZE_MB} MB per upload</strong></li>
+  <li>📊&nbsp; Auto-analysis · Excel &amp; ZIP download</li>
+</ul>
 """, unsafe_allow_html=True)
-    uploaded_files = st.file_uploader(
-        "Upload image files (DICOM · JPG · PNG · BMP)",
-        type=["jpg", "jpeg", "png", "bmp", "dcm"],
-        accept_multiple_files=True,
-    )
+        uploaded_files = st.file_uploader(
+            "Upload image files (DICOM · JPG · PNG · BMP)",
+            type=["jpg", "jpeg", "png", "bmp", "dcm"],
+            accept_multiple_files=True,
+        )
 
 
 @st.cache_resource
