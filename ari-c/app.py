@@ -300,6 +300,16 @@ hr { border-color: rgba(255,255,255,.07) !important; margin: 32px 0 !important; 
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
 
+/* ─── Streamlit container(border=True) → match ari-card style ── */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(255,255,255,.03) !important;
+    border: 1px solid rgba(255,255,255,.08) !important;
+    border-radius: 18px !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] > div {
+    padding: 4px 8px 8px !important;
+}
+
 /* ─── Version cards ── */
 .ari-cards {
     display: grid;
@@ -337,6 +347,22 @@ hr { border-color: rgba(255,255,255,.07) !important; margin: 32px 0 !important; 
     line-height: 1.45;
 }
 .ari-card li strong { color: #d1d1d6; }
+.ari-card-ul {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ari-card-ul li {
+    font-size: 14px;
+    color: #98989d;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.45;
+}
 .ari-card-video {
     margin-top: 22px;
     background: rgba(255,255,255,.025);
@@ -433,22 +459,20 @@ with _col_d:
 """, unsafe_allow_html=True)
 
 with _col_w:
-    st.markdown(f"""
-<div class="ari-card" style="margin-bottom:12px">
-  <p class="ari-card-title">🌐 Web Version</p>
-  <ul>
-    <li>🌐&nbsp; Accessible from any device via browser</li>
-    <li>📁&nbsp; Supports <strong>DICOM · JPG · PNG · BMP</strong></li>
-    <li>⚠️&nbsp; File size limit: <strong>{MAX_FILE_SIZE_MB} MB per upload</strong></li>
-    <li>📊&nbsp; Auto-analysis · Excel &amp; ZIP download</li>
-  </ul>
-</div>
+    with st.container(border=True):
+        st.markdown("""
+<p class="ari-card-title">🌐 Web Version</p>
+<ul class="ari-card-ul">
+  <li>🌐&nbsp; Accessible from any device via browser</li>
+  <li>📊&nbsp; Auto-analysis · Excel &amp; ZIP download</li>
+</ul>
 """, unsafe_allow_html=True)
-    uploaded_files = st.file_uploader(
-        "Upload image files (DICOM · JPG · PNG · BMP)",
-        type=["jpg", "jpeg", "png", "bmp", "dcm"],
-        accept_multiple_files=True,
-    )
+        uploaded_files = st.file_uploader(
+            "Upload files",
+            type=["jpg", "jpeg", "png", "bmp", "dcm"],
+            accept_multiple_files=True,
+            label_visibility="collapsed",
+        )
 
 
 @st.cache_resource
