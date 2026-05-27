@@ -350,6 +350,11 @@
       border-radius: 50%;
     }
 
+    .featured--aris .featured-image-wrap::before {
+      background: radial-gradient(ellipse, rgba(255,107,107,.18) 0%, transparent 70%);
+    }
+    .featured--aris .featured-label { color: var(--ari-s); }
+
     .featured-img {
       width: 280px;
       height: 280px;
@@ -830,6 +835,48 @@
 
 <div class="divider"></div>
 
+<!-- ══ Featured (ARI-S) ═════════════════════════════════════ -->
+<section class="featured featured--aris">
+  <div class="featured-inner">
+
+    <div class="featured-body">
+      <div class="featured-tag">
+        <span class="dot"></span><span data-i18n="featured-available">지금 이용 가능</span>
+      </div>
+      <p class="featured-label">ARI-S</p>
+      <h2 class="featured-title">Lumbar Stenosis<br />Probability</h2>
+      <p class="featured-desc" data-i18n="aris-featured-desc">
+        3-view 측면 X-ray(신전·굴곡·중립위)로 요추 협착증 확률을 예측합니다.
+        Multi-Pose ResNet50 모델과 Grad-CAM 히트맵으로 AI 판단 근거를 시각화합니다.
+      </p>
+      <div class="featured-stats">
+        <div class="stat-item">
+          <div class="stat-value">3-View</div>
+          <div class="stat-label" data-i18n="aris-stat-view">다자세 X-ray 분석</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">ResNet50</div>
+          <div class="stat-label" data-i18n="aris-stat-model">Multi-Pose 딥러닝</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">Grad-CAM</div>
+          <div class="stat-label" data-i18n="aris-stat-vis">AI 판단 시각화</div>
+        </div>
+      </div>
+      <a href="https://ari-agent0ari-s.streamlit.app/" target="_blank" rel="noopener" class="featured-cta">
+        <span data-i18n="featured-cta">앱 시작하기</span> <span class="arrow">→</span>
+      </a>
+    </div>
+
+    <div class="featured-image-wrap">
+      <img class="featured-img" src="assets/icon_stenosis.png" alt="ARI-S Stenosis" />
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
 <!-- ══ Modules Grid (Coming Soon) ═══════════════════════════ -->
 <section class="modules" id="about">
   <div class="section-header">
@@ -852,23 +899,6 @@
         <p class="module-card-desc" data-i18n="aril-desc">척추 시상면 파라미터 분석. Lumbar lordosis, pelvic incidence, pelvic tilt, sacral slope, sagittal vertical axis 자동 측정.</p>
       </div>
     </div>
-
-    <!-- ARI-S -->
-    <a href="https://ariagent-s.streamlit.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;">
-    <div class="module-card" style="cursor:pointer;">
-      <div class="module-card-image" style="background: radial-gradient(ellipse at 50% 60%, rgba(255,107,107,.12) 0%, transparent 70%);">
-        <img src="assets/icon_stenosis.png" alt="ARI-S Stenosis" />
-      </div>
-      <div class="module-card-body">
-        <span class="module-card-tag" style="background:rgba(63,185,80,.12);color:#3fb950;border-color:rgba(63,185,80,.25);">
-          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3fb950;margin-right:5px;animation:pulse 2s infinite;"></span>지금 이용 가능
-        </span>
-        <p class="module-card-label" style="color: var(--ari-s)">ARI-S</p>
-        <h3 class="module-card-title">Lumbar Stenosis Probability</h3>
-        <p class="module-card-desc" data-i18n="aris-desc">3-view X-ray 기반 요추 협착증 확률 예측. Multi-Pose ResNet50 + Grad-CAM 시각화.</p>
-      </div>
-    </div>
-    </a>
 
     <!-- ARI-P -->
     <div class="module-card">
@@ -931,7 +961,7 @@
           <p class="footer-col-title" data-i18n="footer-modules-col">모듈</p>
           <a href="https://ariagent-c.streamlit.app" target="_blank" rel="noopener">ARI-C (Active)</a>
           <a href="#modules">ARI-W</a>
-          <a href="https://ariagent-s.streamlit.app" target="_blank" rel="noopener">ARI-S (Active)</a>
+          <a href="https://ari-agent0ari-s.streamlit.app/" target="_blank" rel="noopener">ARI-S (Active)</a>
           <a href="#modules">ARI-P</a>
         </div>
         <div class="footer-col">
@@ -964,6 +994,10 @@
       'stat-format': '여러 지원 파일 포맷',
       'stat-batch': '대용량 처리',
       'featured-cta': '앱 시작하기',
+      'aris-featured-desc': '3-view 측면 X-ray(신전·굴곡·중립위)로 요추 협착증 확률을 예측합니다. Multi-Pose ResNet50 모델과 Grad-CAM 히트맵으로 AI 판단 근거를 시각화합니다.',
+      'aris-stat-view': '다자세 X-ray 분석',
+      'aris-stat-model': 'Multi-Pose 딥러닝',
+      'aris-stat-vis': 'AI 판단 시각화',
       'modules-title': '준비 중인 모듈',
       'modules-desc': '임상 데이터 기반 훈련 모델이 순차적으로 공개됩니다.',
       'aril-desc': '요추 시상 균형 분석. Lumbar lordosis, pelvic incidence, sagittal vertical axis 자동 측정.',
@@ -995,6 +1029,10 @@
       'stat-format': 'Multi-format Support',
       'stat-batch': 'Batch Processing',
       'featured-cta': 'Launch App',
+      'aris-featured-desc': 'Predicts lumbar stenosis probability from 3-view lateral X-rays (Extension/Flexion/Neutral). Visualizes AI reasoning with Multi-Pose ResNet50 and Grad-CAM heatmaps.',
+      'aris-stat-view': 'Multi-Pose X-ray',
+      'aris-stat-model': 'Multi-Pose Deep Learning',
+      'aris-stat-vis': 'AI Visualization',
       'modules-title': 'Upcoming Modules',
       'modules-desc': 'Clinically trained AI models to be released sequentially.',
       'aril-desc': 'Lumbar sagittal balance analysis. Automated measurement of lumbar lordosis, pelvic incidence, and sagittal vertical axis.',
