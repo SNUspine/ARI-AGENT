@@ -431,11 +431,6 @@ st.markdown(f"""
   <h1 class="ari-title">C-spine Lateral<br>Radiograph Analyzer</h1>
   <p class="ari-sub">C2–C7 Cobb Angle &nbsp;·&nbsp; C2 Sagittal Vertical Axis &nbsp;·&nbsp; C7 Slope</p>
   <div class="ari-specs">
-    <span class="ari-chip">Web &nbsp;·&nbsp; {MAX_FILE_SIZE_MB} MB limit</span>
-    <span class="ari-chip">DICOM</span>
-    <span class="ari-chip">JPG</span>
-    <span class="ari-chip">PNG</span>
-    <span class="ari-chip">BMP</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -473,7 +468,7 @@ with _col_w:
 </ul>
 """, unsafe_allow_html=True)
         uploaded_files = st.file_uploader(
-            "Upload image files (DICOM · JPG · PNG · BMP)",
+            "Upload image files",
             type=["jpg", "jpeg", "png", "bmp", "dcm"],
             accept_multiple_files=True,
         )
