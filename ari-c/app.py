@@ -339,20 +339,20 @@ hr { border-color: rgba(255,255,255,.07) !important; margin: 32px 0 !important; 
 .ari-card li strong { color: #d1d1d6; }
 .ari-card-video {
     margin-top: 22px;
-    background: rgba(255,255,255,.025);
-    border: 1px dashed rgba(255,255,255,.1);
     border-radius: 12px;
-    height: 130px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #6e6e73;
-    font-size: 13px;
-    gap: 6px;
-    letter-spacing: .01em;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
 }
-.ari-card-video span { font-size: 24px; }
+.ari-card-video iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
 .ari-card-contact {
     margin-top: 16px;
     font-size: 13px;
@@ -449,8 +449,10 @@ with _col_d:
     <li>⚡&nbsp; Batch throughput: ~<strong>10,000 images in 4 hours</strong></li>
   </ul>
   <div class="ari-card-video">
-    <span>🎬</span>
-    Demo video coming soon
+    <iframe src="https://www.youtube.com/embed/25_CxOHhRh8"
+      title="ARI-C Demo Video"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen></iframe>
   </div>
   <p class="ari-card-contact">Purchase inquiry: <a href="mailto:imspinesurgeon@gmail.com">imspinesurgeon@gmail.com</a></p>
 </div>
